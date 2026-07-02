@@ -244,29 +244,36 @@ export default function Home() {
       <div className="px-4 mt-2 mb-8 z-10 relative">
         <div className="w-full max-w-md md:max-w-4xl lg:max-w-5xl mx-auto bg-white/90 rounded-[2rem] p-6 sm:p-8 shadow-xl border border-white/60 backdrop-blur-sm">
           <div className="flex flex-col items-center">
-            <img
-              src={muallimahUmmiAvatar}
-              alt="Muallimah Ummi"
-              className="h-44 w-32 object-contain drop-shadow-md"
-            />
-
-            <p className="mt-2 text-base font-bold text-purple-700">
-              Muallimah Ummi
-            </p>
-
-            <div className="mt-3 rounded-2xl bg-purple-50 px-5 py-3 border border-purple-100 relative shadow-sm max-w-sm">
-              {/* Bubble tail */}
-              <div className="absolute -top-2 left-1/2 transform -translate-x-1/2 w-4 h-4 bg-purple-50 border-t border-l border-purple-100 rotate-45"></div>
-              <p className="text-center text-sm text-slate-700 font-bold leading-relaxed">
-                Pilih unit pembelajaran dan mulakan latihan kamu.
-              </p>
+            
+            {/* Muallimah Ummi Card Section (Styled identical to Muallim Khairil's) */}
+            <div className="relative w-full max-w-sm mx-auto bg-gradient-to-br from-white to-purple-50 rounded-[2rem] shadow-xl border border-purple-100/60 p-6 flex flex-col items-center overflow-hidden mb-8">
+              {/* Decorative pattern background */}
+              <div className="absolute inset-0 bg-app-pattern opacity-30"></div>
+              
+              <div className="relative z-10 flex flex-col items-center w-full">
+                <div className="w-48 h-56 relative mb-4">
+                  <img 
+                    src={muallimahUmmiAvatar} 
+                    alt="Muallimah Ummi" 
+                    className="w-full h-full object-contain drop-shadow-lg"
+                  />
+                </div>
+                
+                <div className="bg-white w-full px-5 py-4 rounded-2xl rounded-tr-sm shadow-md border border-purple-100/40 relative">
+                  <p className="text-slate-700 text-sm font-bold leading-relaxed text-left">
+                    Assalamualaikum! Saya Muallimah Ummi. Pilih unit pembelajaran di bawah dan mulakan latihan kamu.
+                  </p>
+                  {/* Bubble tail */}
+                  <div className="absolute -top-2 right-12 w-4 h-4 bg-white border-t border-r border-slate-100 transform -rotate-45"></div>
+                </div>
+              </div>
             </div>
 
-            <h2 className="mt-8 text-center font-arabic text-[32px] font-bold text-purple-700 drop-shadow-sm">
+            <h2 className="mt-2 text-center font-arabic text-[32px] font-bold text-purple-700 drop-shadow-sm">
               المُحْتَوَيَاتُ
             </h2>
 
-            <p className="mt-1 mb-6 text-center text-[15px] font-bold text-slate-500 tracking-wide">
+            <p className="mt-1 mb-8 text-center text-[15px] font-bold text-slate-500 tracking-wide">
               Kandungan Pembelajaran
             </p>
           </div>
