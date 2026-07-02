@@ -33,7 +33,7 @@ export function useAppAssets(assetKeys: string[]) {
           setAssets(assetMap);
         }
       } catch (err) {
-        console.error("Error fetching app assets:", err);
+        console.warn("Info fetching app assets:", err);
       } finally {
         setLoading(false);
       }

@@ -61,11 +61,11 @@ export default function QuizResultScreen() {
           });
           
           if (error) {
-            console.error("Gagal simpan keputusan kuiz:", error);
+            console.warn("Gagal simpan keputusan kuiz:", error);
           }
         }
       } catch (err) {
-        console.error("Error saving quiz attempt", err);
+        console.warn("Error saving quiz attempt", err);
       } finally {
         setIsSaving(false);
       }

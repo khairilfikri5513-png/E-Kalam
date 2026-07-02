@@ -514,7 +514,7 @@ export function useUnitVocabulary(unitKey: string) {
           }
         }
       } catch (err) {
-        console.error("Error fetching unit vocabulary:", err);
+        console.warn("Info fetching unit vocabulary:", err);
         // Fallback to dummy data
         if (unitKey === "unit_1_classroom") {
           setVocabulary(dummyUnitOneVocabulary);

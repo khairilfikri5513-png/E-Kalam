@@ -43,9 +43,33 @@ export default function AvatarUploadScreen() {
   const [currentAvatarUrl, setCurrentAvatarUrl] = useState<string | null>(null);
 
   useEffect(() => {
-    // Fetch current avatar to show as reference
-    const fetchCurrentAvatar = async () => {
+    const checkUserAndFetchAvatar = async () => {
+      const token = localStorage.getItem("admin_token");
+      if (!token) {
+        navigate("/admin/login");
+        return;
+      }
+
       try {
+        // 1. Verify token via backend
+        const verifyRes = await fetch("/api/admin/verify", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ token }),
+        });
+
+        const verifyResult = await verifyRes.json();
+
+        if (!verifyResult || !verifyResult.valid) {
+          localStorage.removeItem("admin_token");
+          localStorage.removeItem("admin_username");
+          navigate("/admin/login");
+          return;
+        }
+
+        // 2. Fetch current avatar
         const { data, error } = await supabase
           .from("app_assets")
           .select("public_url")
@@ -56,12 +80,12 @@ export default function AvatarUploadScreen() {
           setCurrentAvatarUrl(data.public_url);
         }
       } catch (err) {
-        // Ignore errors if not found
+        console.warn("Auth / Fetch Avatar Error:", err);
       }
     };
 
-    fetchCurrentAvatar();
-  }, [selectedConfig.assetKey]);
+    checkUserAndFetchAvatar();
+  }, [selectedConfig.assetKey, navigate]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {

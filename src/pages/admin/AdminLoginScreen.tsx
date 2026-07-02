@@ -4,7 +4,7 @@ import { supabase } from "../../lib/supabase";
 import { Lock, Mail, ArrowRight, Loader2 } from "lucide-react";
 
 export default function AdminLoginScreen() {
-  const [email, setEmail] = useState("");
+  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
@@ -16,27 +16,28 @@ export default function AdminLoginScreen() {
     setErrorMsg("");
 
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
+      const response = await fetch("/api/admin/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ username, password }),
       });
 
-      if (error) throw error;
+      const result = await response.json();
 
-      if (data.user) {
-        // Check if user is in admin_profiles
-        const { data: adminData, error: adminError } = await supabase
-          .from("admin_profiles")
-          .select("role")
-          .eq("user_id", data.user.id)
-          .single();
+      if (!response.ok) {
+        throw new Error(result.error || "Login gagal.");
+      }
 
-        if (adminError || !adminData) {
-          await supabase.auth.signOut();
-          throw new Error("Akaun ini bukan admin E-Kalam.");
-        }
-
+      if (result.success && result.token) {
+        // Save session details securely in local storage
+        localStorage.setItem("admin_token", result.token);
+        localStorage.setItem("admin_username", result.username);
+        
         navigate("/admin/dashboard");
+      } else {
+        throw new Error("Ralat sistem, token tidak diterima.");
       }
     } catch (err: any) {
       setErrorMsg(err.message || "Login gagal.");
@@ -72,19 +73,19 @@ export default function AdminLoginScreen() {
         <form onSubmit={handleLogin} className="space-y-5">
           <div>
             <label className="block text-sm font-bold text-slate-700 mb-1.5">
-              Email Admin
+              Username Admin
             </label>
             <div className="relative">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                 <Mail className="h-5 w-5 text-slate-400" />
               </div>
               <input
-                type="email"
+                type="text"
                 required
                 className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-                placeholder="admin@e-kalam.my"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                placeholder="khairilfikri"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
               />
             </div>
           </div>

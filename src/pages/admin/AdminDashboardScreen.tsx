@@ -9,34 +9,44 @@ export default function AdminDashboardScreen() {
 
   useEffect(() => {
     const checkUser = async () => {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
+      const token = localStorage.getItem("admin_token");
 
-      if (!session) {
+      if (!token) {
         navigate("/admin/login");
         return;
       }
 
-      const { data: adminData, error } = await supabase
-        .from("admin_profiles")
-        .select("role")
-        .eq("user_id", session.user.id)
-        .single();
+      try {
+        const response = await fetch("/api/admin/verify", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ token }),
+        });
 
-      if (error || !adminData) {
-        await supabase.auth.signOut();
+        const result = await response.json();
+
+        if (result && result.valid) {
+          setLoading(false);
+        } else {
+          localStorage.removeItem("admin_token");
+          localStorage.removeItem("admin_username");
+          navigate("/admin/login");
+        }
+      } catch (err) {
+        localStorage.removeItem("admin_token");
+        localStorage.removeItem("admin_username");
         navigate("/admin/login");
-      } else {
-        setLoading(false);
       }
     };
 
     checkUser();
   }, [navigate]);
 
-  const handleLogout = async () => {
-    await supabase.auth.signOut();
+  const handleLogout = () => {
+    localStorage.removeItem("admin_token");
+    localStorage.removeItem("admin_username");
     navigate("/admin/login");
   };
 
