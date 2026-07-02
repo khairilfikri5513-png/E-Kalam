@@ -19,7 +19,7 @@ const contentsUnits = [
     icon: School,
     gradient: "from-sky-400 to-blue-400",
     shadow: "shadow-blue-500/30",
-    shape: "rounded-full"
+    shape: "rounded-3xl"
   },
   {
     id: 2,
@@ -29,7 +29,7 @@ const contentsUnits = [
     icon: Shirt,
     gradient: "from-green-400 to-emerald-500",
     shadow: "shadow-green-500/30",
-    shape: "rounded-2xl"
+    shape: "rounded-3xl"
   },
   {
     id: 3,
@@ -39,7 +39,7 @@ const contentsUnits = [
     icon: Palette,
     gradient: "from-pink-300 to-rose-400",
     shadow: "shadow-pink-500/30",
-    shape: "rounded-[2rem] rounded-tr-md"
+    shape: "rounded-3xl"
   },
   {
     id: 4,
@@ -49,7 +49,7 @@ const contentsUnits = [
     icon: Clock,
     gradient: "from-yellow-400 to-orange-400",
     shadow: "shadow-orange-500/30",
-    shape: "rounded-t-[3rem] rounded-b-xl"
+    shape: "rounded-3xl"
   },
   {
     id: 5,
@@ -59,7 +59,7 @@ const contentsUnits = [
     icon: BookOpen,
     gradient: "from-purple-300 to-violet-400",
     shadow: "shadow-purple-500/30",
-    shape: "rounded-[2rem] rounded-bl-md"
+    shape: "rounded-3xl"
   }
 ];
 
@@ -266,7 +266,7 @@ export default function Home() {
             </p>
           </div>
 
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 gap-y-6">
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
             {contentsUnits.map((item, index) => (
               <button 
                 key={item.id} 
@@ -283,7 +283,7 @@ export default function Home() {
                     alert(item.id === 5 ? item.unit : `${item.unit}: ${item.title}`);
                   }
                 }}
-                className={`group relative outline-none focus:outline-none ${index === 4 ? 'col-span-2 md:col-span-4 max-w-[220px] mx-auto w-full' : 'w-full'}`}
+                className="group relative outline-none focus:outline-none w-full"
               >
                 <div className={`relative w-full aspect-square flex flex-col items-center justify-center p-4 bg-gradient-to-b ${item.gradient} ${item.shadow} shadow-xl border-4 border-white/80 transition-all duration-300 transform group-hover:scale-105 group-active:scale-95 ${item.shape} overflow-hidden`}>
                   <div className="absolute inset-0 glossy-overlay pointer-events-none opacity-40"></div>
@@ -303,6 +303,19 @@ export default function Home() {
           </div>
         </div>
       </div>
+      
+      {/* Footer / Administrative entry */}
+      <footer className="w-full mt-auto py-8 text-center text-xs text-slate-400 border-t border-slate-100 bg-white/50 relative z-10">
+        <div className="flex flex-col items-center gap-2">
+          <span>&copy; {new Date().getFullYear()} E-Kalam. Hak Cipta Terpelihara.</span>
+          <button 
+            onClick={() => navigate('/admin/login')}
+            className="text-slate-500 hover:text-primary font-semibold underline transition-colors"
+          >
+            Log Masuk Admin
+          </button>
+        </div>
+      </footer>
       
     </div>
   );

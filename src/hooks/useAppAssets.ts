@@ -1,5 +1,4 @@
 import { useState, useEffect } from "react";
-import { supabase } from "../lib/supabase";
 
 export interface AppAsset {
   id: string;
@@ -16,22 +15,13 @@ export function useAppAssets(assetKeys: string[]) {
   useEffect(() => {
     async function fetchAssets() {
       try {
-        const { data, error } = await supabase
-          .from("app_assets")
-          .select("asset_key, public_url")
-          .in("asset_key", assetKeys);
-
-        if (error) throw error;
-
-        if (data) {
-          const assetMap: Record<string, string> = {};
-          data.forEach((asset) => {
-            if (asset.public_url) {
-              assetMap[asset.asset_key] = asset.public_url;
-            }
-          });
-          setAssets(assetMap);
+        const keysParam = assetKeys.join(",");
+        const response = await fetch(`/api/assets?keys=${encodeURIComponent(keysParam)}`);
+        if (!response.ok) {
+          throw new Error("Gagal memuat turun fail aset.");
         }
+        const data = await response.json();
+        setAssets(data);
       } catch (err) {
         console.warn("Info fetching app assets:", err);
       } finally {
@@ -39,7 +29,7 @@ export function useAppAssets(assetKeys: string[]) {
       }
     }
 
-    if (assetKeys.length > 0 && import.meta.env.VITE_SUPABASE_URL) {
+    if (assetKeys.length > 0) {
       fetchAssets();
     } else {
       setLoading(false);
