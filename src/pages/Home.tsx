@@ -16,6 +16,7 @@ const contentsUnits = [
     unit: "الوحدة الأولى",
     title: "تفضل إلى الفصل",
     theme: "Kelas",
+    translation: "Sila Masuk ke Kelas",
     icon: School,
     gradient: "from-sky-400 to-blue-400",
     shadow: "shadow-blue-500/30",
@@ -26,6 +27,7 @@ const contentsUnits = [
     unit: "الوحدة الثانية",
     title: "ملابسي الجميلة",
     theme: "Pakaian",
+    translation: "Pakaian Cantik Saya",
     icon: Shirt,
     gradient: "from-green-400 to-emerald-500",
     shadow: "shadow-green-500/30",
@@ -36,6 +38,7 @@ const contentsUnits = [
     unit: "الوحدة الثالثة",
     title: "الألوان حولنا",
     theme: "Warna",
+    translation: "Warna di Sekeliling Kita",
     icon: Palette,
     gradient: "from-pink-300 to-rose-400",
     shadow: "shadow-pink-500/30",
@@ -46,6 +49,7 @@ const contentsUnits = [
     unit: "الوحدة الرابعة",
     title: "الوقت كالذهب",
     theme: "Masa",
+    translation: "Masa Seperti Emas",
     icon: Clock,
     gradient: "from-yellow-400 to-orange-400",
     shadow: "shadow-orange-500/30",
@@ -56,6 +60,7 @@ const contentsUnits = [
     unit: "قائمة المفردات",
     title: "Senarai Kosa Kata",
     theme: "Kosa Kata",
+    translation: "Rujukan Kosa Kata",
     icon: BookOpen,
     gradient: "from-purple-300 to-violet-400",
     shadow: "shadow-purple-500/30",
@@ -237,7 +242,7 @@ export default function Home() {
 
       {/* Contents Section */}
       <div className="px-4 mt-2 mb-8 z-10 relative">
-        <div className="w-full max-w-md md:max-w-3xl lg:max-w-4xl mx-auto bg-white/90 rounded-[2rem] p-6 shadow-xl border border-white/60 backdrop-blur-sm">
+        <div className="w-full max-w-md md:max-w-4xl lg:max-w-5xl mx-auto bg-white/90 rounded-[2rem] p-6 sm:p-8 shadow-xl border border-white/60 backdrop-blur-sm">
           <div className="flex flex-col items-center">
             <img
               src={muallimahUmmiAvatar}
@@ -266,7 +271,7 @@ export default function Home() {
             </p>
           </div>
 
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-6 max-w-3xl mx-auto w-full">
             {contentsUnits.map((item, index) => (
               <button 
                 key={item.id} 
@@ -285,18 +290,31 @@ export default function Home() {
                 }}
                 className="group relative outline-none focus:outline-none w-full"
               >
-                <div className={`relative w-full aspect-square flex flex-col items-center justify-center p-4 bg-gradient-to-b ${item.gradient} ${item.shadow} shadow-xl border-4 border-white/80 transition-all duration-300 transform group-hover:scale-105 group-active:scale-95 ${item.shape} overflow-hidden`}>
+                <div className={`relative w-full aspect-[4/5] flex flex-col items-center justify-between p-3 sm:p-4 bg-gradient-to-b ${item.gradient} ${item.shadow} shadow-xl border-4 border-white/80 transition-all duration-300 transform group-hover:scale-105 group-active:scale-95 ${item.shape} overflow-hidden`}>
                   <div className="absolute inset-0 glossy-overlay pointer-events-none opacity-40"></div>
                   
-                  <div className="w-12 h-12 rounded-full bg-white/25 flex items-center justify-center mb-3 backdrop-blur-sm shadow-inner border border-white/40">
-                    <item.icon className="w-6 h-6 text-white drop-shadow-md" />
+                  {/* Top: Icon container */}
+                  <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-white/25 flex items-center justify-center backdrop-blur-sm shadow-inner border border-white/45 shrink-0 mt-1 sm:mt-2">
+                    <item.icon className="w-5 h-5 sm:w-6 sm:h-6 text-white drop-shadow-md" strokeWidth={2.5} />
                   </div>
                   
-                  <h3 className="text-white font-arabic font-bold text-2xl drop-shadow-md mb-1">{item.unit}</h3>
-                  
-                  <p className="text-white/95 font-arabic font-bold text-lg leading-tight drop-shadow-sm text-center px-2">
-                    {item.title}
-                  </p>
+                  {/* Middle & Bottom: Text elements */}
+                  <div className="w-full flex-1 flex flex-col items-center justify-center min-h-0 text-center mt-2">
+                    <h3 className="text-white font-arabic font-bold text-sm sm:text-base md:text-lg drop-shadow-md tracking-tight leading-tight mb-0.5">
+                      {item.unit}
+                    </h3>
+                    
+                    <p className="text-white/95 font-arabic font-bold text-[11px] sm:text-[12px] md:text-sm leading-tight drop-shadow-sm px-1 mb-2">
+                      {item.title}
+                    </p>
+                    
+                    {/* BM Translation capsule */}
+                    {item.translation && (
+                      <span className="inline-block text-white font-sans font-bold text-[9px] sm:text-[10px] md:text-[11px] leading-tight px-2 py-0.5 bg-black/20 rounded-full tracking-wide max-w-[95%]">
+                        {item.translation}
+                      </span>
+                    )}
+                  </div>
                 </div>
               </button>
             ))}
