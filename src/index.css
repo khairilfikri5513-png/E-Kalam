@@ -1,0 +1,53 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Poppins", ui-sans-serif, system-ui, sans-serif;
+  --font-arabic: "Noto Naskh Arabic", serif;
+  
+  --color-primary: #2563EB; /* Electric Blue */
+  --color-cyan: #06B6D4;
+  --color-purple: #8B5CF6; /* Soft Purple */
+  --color-yellow: #FACC15; /* Bright Yellow */
+  --color-green: #22C55E; /* Fresh Green */
+  --color-pink: #FB7185; /* Soft Pink */
+  --color-navy: #0F172A; /* Deep Navy */
+  --color-sky: #E0F2FE; /* Light Sky Background */
+  --color-cream: #FFF7ED; /* Cream Soft */
+}
+
+@layer base {
+  body {
+    background: #eef2ff;
+    color: #0F172A;
+    font-family: var(--font-sans);
+  }
+}
+
+/* 3D and glossy effects */
+.glossy-overlay {
+  background: linear-gradient(135deg, rgba(255,255,255,0.4) 0%, rgba(255,255,255,0) 50%);
+}
+
+.inner-highlight {
+  box-shadow: inset 0 2px 4px rgba(255,255,255,0.5);
+}
+
+.card-shadow {
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+}
+
+.bg-app-pattern {
+  background-color: #f0f7ff;
+  background-image: 
+    radial-gradient(circle at 15% 50%, rgba(255, 255, 255, 0.6) 0%, transparent 25%),
+    radial-gradient(circle at 85% 30%, rgba(255, 255, 255, 0.6) 0%, transparent 25%),
+    radial-gradient(circle at 50% 80%, rgba(255, 255, 255, 0.4) 0%, transparent 30%);
+}
+
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.hide-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}

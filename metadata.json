@@ -1,0 +1,8 @@
+{
+  "name": "E-Kalam",
+  "description": "Aplikasi pembelajaran interaktif Bahasa Arab Tahun 3 (KSSR Semakan) memfokuskan kemahiran mendengar dan membaca.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
