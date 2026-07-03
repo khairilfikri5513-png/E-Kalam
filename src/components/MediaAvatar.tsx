@@ -11,17 +11,28 @@ export function MediaAvatar({ src, alt, className }: MediaAvatarProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
 
   useEffect(() => {
-    if (!isVideo || !videoRef.current) return;
+    const video = videoRef.current;
+    if (!isVideo || !video) return;
 
-    const handleScroll = () => {
-      if (videoRef.current && !videoRef.current.paused) {
-        videoRef.current.pause();
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting && entry.intersectionRatio >= 0.6) {
+          video.play().catch(() => {
+            console.log("Autoplay disekat oleh browser. Pengguna perlu tekan play.");
+          });
+        } else {
+          video.pause();
+        }
+      },
+      {
+        threshold: [0, 0.6, 1],
       }
-    };
+    );
 
-    window.addEventListener('scroll', handleScroll, { passive: true });
+    observer.observe(video);
+
     return () => {
-      window.removeEventListener('scroll', handleScroll);
+      observer.disconnect();
     };
   }, [isVideo]);
 
@@ -32,8 +43,7 @@ export function MediaAvatar({ src, alt, className }: MediaAvatarProps) {
         src={src}
         controls
         playsInline
-        autoPlay
-        muted={false} /* Allow sound if possible, but browsers might block unmuted autoplay. However, if the user interacted with the page earlier, it might work. If muted is required for autoplay, we will have to set muted, but the user requested autoplay. Let's try autoPlay directly. Or we can just use autoPlay and the browser will decide. */
+        muted
         preload="metadata"
         className={className}
       >

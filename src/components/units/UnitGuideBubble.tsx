@@ -1,5 +1,6 @@
 import React from "react";
 import { Info } from "lucide-react";
+import { MediaAvatar } from "../MediaAvatar";
 
 interface UnitGuideBubbleProps {
   avatarUrl?: string; // Made optional and unused
@@ -8,6 +9,7 @@ interface UnitGuideBubbleProps {
 }
 
 export function UnitGuideBubble({
+  avatarUrl,
   message,
   themeColor = "blue",
 }: UnitGuideBubbleProps) {
@@ -22,9 +24,15 @@ export function UnitGuideBubble({
     <div
       className={`bg-white rounded-2xl p-4 shadow-sm ${containerShadow} border border-slate-200 flex items-center gap-3 mb-8`}
     >
-      <div className={`p-2 rounded-full ${bubbleBg}`}>
-        <Info className="w-5 h-5" />
-      </div>
+      {avatarUrl ? (
+        <div className="w-16 h-16 shrink-0 relative">
+          <MediaAvatar src={avatarUrl} alt="Avatar" className="w-full h-full object-cover rounded-xl" />
+        </div>
+      ) : (
+        <div className={`p-2 rounded-full ${bubbleBg}`}>
+          <Info className="w-5 h-5" />
+        </div>
+      )}
       <p className="text-slate-700 text-sm font-bold leading-relaxed flex-1">
         {message}
       </p>

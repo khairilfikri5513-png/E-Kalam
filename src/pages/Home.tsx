@@ -166,7 +166,7 @@ export default function Home() {
           <div className="absolute inset-0 bg-app-pattern opacity-30"></div>
           
           <div className="relative z-10 flex flex-col items-center w-full">
-            <div className="w-56 h-72 relative mb-4">
+            <div className="w-64 h-80 relative mb-4">
               {assetsLoading ? <Skeleton className="w-full h-full rounded-2xl" /> : <MediaAvatar src={muallimKhairilAvatar} alt="Muallim Khairil" className="w-full h-full object-contain drop-shadow-lg rounded-2xl" />}
             </div>
             
@@ -242,7 +242,7 @@ export default function Home() {
               <div className="absolute inset-0 bg-app-pattern opacity-30"></div>
               
               <div className="relative z-10 flex flex-col items-center w-full">
-                <div className="w-56 h-72 relative mb-4">
+                <div className="w-64 h-80 relative mb-4">
                   {assetsLoading ? <Skeleton className="w-full h-full rounded-2xl" /> : <MediaAvatar src={muallimahUmmiAvatar} alt="Muallimah Ummi" className="w-full h-full object-contain drop-shadow-lg rounded-2xl" />}
                 </div>
                 
