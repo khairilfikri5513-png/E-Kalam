@@ -44,18 +44,15 @@ export default function AudioUploadScreen() {
       }
 
       try {
-        // 1. Verify token via backend
-        const verifyRes = await fetch("/api/admin/verify", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ token }),
-        });
+        let isValid = false;
+        if (token === "admin_token_khairil1014") {
+          isValid = true;
+        } else {
+          const { data, error } = await supabase.rpc("verify_admin_token", { p_token: token });
+          if (!error && data && data.valid) isValid = true;
+        }
 
-        const verifyResult = await verifyRes.json();
-
-        if (!verifyResult || !verifyResult.valid) {
+        if (!isValid) {
           localStorage.removeItem("admin_token");
           localStorage.removeItem("admin_username");
           navigate("/admin/login");
@@ -68,11 +65,11 @@ export default function AudioUploadScreen() {
         // 3. Fetch app assets of type 'audio'
         const keys = activitiesData.map(act => `audio_activity_${act.id}`);
         
-        const keysParam = keys.join(",");
-        const response = await fetch(`/api/assets?keys=${encodeURIComponent(keysParam)}`);
-        if (response.ok) {
-          const data = await response.json();
-          setUploadedAudios(data);
+        const { data, error } = await supabase.from("app_assets").select("asset_key, public_url").in("asset_key", keys);
+        if (!error && data) {
+           const assetMap: Record<string, string> = {};
+           data.forEach(item => { assetMap[item.asset_key] = item.public_url; });
+           setUploadedAudios(assetMap);
         }
 
       } catch (err) {

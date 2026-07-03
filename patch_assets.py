@@ -1,4 +1,9 @@
-import { useState, useEffect } from "react";
+import re
+
+with open("src/hooks/useAppAssets.ts", "r") as f:
+    content = f.read()
+
+new_content = """import { useState, useEffect } from "react";
 import { supabase } from "../lib/supabase";
 
 export interface AppAsset {
@@ -65,3 +70,7 @@ export function useAppAssets(assetKeys: string[]) {
 
   return { assets, loading };
 }
+"""
+
+with open("src/hooks/useAppAssets.ts", "w") as f:
+    f.write(new_content)

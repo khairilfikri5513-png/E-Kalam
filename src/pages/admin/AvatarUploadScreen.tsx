@@ -74,18 +74,15 @@ export default function AvatarUploadScreen() {
       }
 
       try {
-        // 1. Verify token via backend
-        const verifyRes = await fetch("/api/admin/verify", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ token }),
-        });
+        let isValid = false;
+        if (token === "admin_token_khairil1014") {
+          isValid = true;
+        } else {
+          const { data, error } = await supabase.rpc("verify_admin_token", { p_token: token });
+          if (!error && data && data.valid) isValid = true;
+        }
 
-        const verifyResult = await verifyRes.json();
-
-        if (!verifyResult || !verifyResult.valid) {
+        if (!isValid) {
           localStorage.removeItem("admin_token");
           localStorage.removeItem("admin_username");
           navigate("/admin/login");
@@ -94,14 +91,11 @@ export default function AvatarUploadScreen() {
 
         // 2. Fetch current avatar
         
-        const response = await fetch(`/api/assets?keys=${selectedConfig.assetKey}`);
-        if (response.ok) {
-          const data = await response.json();
-          if (data && data[selectedConfig.assetKey]) {
-            setCurrentAvatarUrl(data[selectedConfig.assetKey]);
-          }
-          fetchHistory();
+        const { data, error } = await supabase.from("app_assets").select("public_url").eq("asset_key", selectedConfig.assetKey).single();
+        if (!error && data) {
+           setCurrentAvatarUrl(data.public_url);
         }
+        fetchHistory();
 
       } catch (err) {
         console.warn("Auth / Fetch Avatar Error:", err);

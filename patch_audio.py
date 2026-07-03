@@ -1,6 +1,6 @@
 import re
 
-with open("src/services/avatarUploadService.ts", "r") as f:
+with open("src/services/audioUploadService.ts", "r") as f:
     content = f.read()
 
 old_logic = """  try {
@@ -10,7 +10,7 @@ old_logic = """  try {
       reader.readAsDataURL(file);
       reader.onload = () => {
         const result = reader.result as string;
-        // Split out the mime-type prefix (e.g. "data:image/png;base64,")
+        // Split out the mime-type prefix
         const base64Data = result.split(",")[1];
         resolve(base64Data);
       };
@@ -24,7 +24,7 @@ old_logic = """  try {
     }
 
     // 2. Call the secure backend endpoint
-    const response = await fetch("/api/admin/upload-avatar", {
+    const response = await fetch("/api/admin/upload-audio", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -41,12 +41,12 @@ old_logic = """  try {
 
     const result = await response.json();
     if (!response.ok) {
-      throw new Error(result.error || "Gagal memuat naik avatar.");
+      throw new Error(result.error || "Gagal memuat naik audio.");
     }
 
     return result.publicUrl;
   } catch (error: any) {
-    console.warn("Error in uploadAvatarToSupabase:", error);
+    console.warn("Error in uploadAudioToSupabase:", error);
     throw error;
   }"""
 
@@ -73,10 +73,10 @@ new_logic = """  try {
     const { error: dbError } = await supabase.from("app_assets").upsert(
       {
         asset_key: assetKey,
-        title: title || "Avatar",
+        title: title || "Audio",
         file_path: storagePath,
         public_url: finalUrl,
-        asset_type: "avatar",
+        asset_type: "audio",
         updated_at: new Date().toISOString(),
       },
       { onConflict: "asset_key" }
@@ -86,11 +86,11 @@ new_logic = """  try {
 
     return finalUrl;
   } catch (error: any) {
-    console.warn("Error in uploadAvatarToSupabase:", error);
+    console.warn("Error in uploadAudioToSupabase:", error);
     throw error;
   }"""
 
 content = content.replace(old_logic, new_logic)
 
-with open("src/services/avatarUploadService.ts", "w") as f:
+with open("src/services/audioUploadService.ts", "w") as f:
     f.write(content)

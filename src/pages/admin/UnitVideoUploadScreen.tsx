@@ -150,47 +150,29 @@ export default function UnitVideoUploadScreen() {
       
       // Let's implement direct upload via fetch to our own api endpoint for unit videos, or use the avatar one if it accepts arbitrary keys.
           // 1. Convert File to base64
-    const base64Promise = new Promise<string>((resolve, reject) => {
-      const reader = new FileReader();
-      reader.readAsDataURL(selectedFile);
-      reader.onload = () => {
-        const result = reader.result as string;
-        // Split out the mime-type prefix
-        const base64Data = result.split(",")[1];
-        resolve(base64Data);
-      };
-      reader.onerror = (error) => reject(error);
-    });
-
-    const fileData = await base64Promise;
-    const token = localStorage.getItem("admin_token");
-    if (!token) {
-      throw new Error("Sesi admin tidak ditemui. Sila login semula.");
-    }
-    
-    // 2. Call the secure backend endpoint
-    const response = await fetch("/api/admin/upload-unit-video", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${token}`,
-      },
-      body: JSON.stringify({
-        fileData,
-        assetKey: selectedUnit.id,
-        storagePath: dynamicStoragePath,
-        title: selectedUnit.title,
-        mimeType: selectedFile.type,
-      }),
-    });
-
-    const result = await response.json();
-      if (!response.ok) {
-        throw new Error(result.error || "Gagal memuat naik video.");
-      }
+      const { data: uploadData, error: uploadError } = await supabase.storage.from("e-kalam-assets").upload(dynamicStoragePath, selectedFile, {
+          contentType: selectedFile.type,
+          upsert: true,
+      });
+      if (uploadError) throw uploadError;
+      const { data: urlData } = supabase.storage.from("e-kalam-assets").getPublicUrl(dynamicStoragePath);
+      const finalUrl = `${urlData.publicUrl}?t=${new Date().getTime()}`;
+      const adminUsername = localStorage.getItem("admin_username") || "admin";
+      const { error: dbError } = await supabase.from("unit_videos").insert({
+          unit_id: selectedUnit.id,
+          title: selectedUnit.title,
+          file_name: selectedFile.name,
+          storage_path: dynamicStoragePath,
+          video_url: finalUrl,
+          mime_type: selectedFile.type,
+          file_size: selectedFile.size,
+          uploaded_by: adminUsername,
+          status: "active"
+      });
+      if (dbError) throw dbError;
 
       setStatus({ type: "success", message: `Video berjaya dimuat naik untuk ${selectedUnit.label}.` });
-      setCurrentVideoUrl(result.publicUrl);
+      setCurrentVideoUrl(finalUrl);
       
       // Refresh history
       const { data, error } = await supabase

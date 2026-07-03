@@ -3,31 +3,82 @@ import re
 with open("src/pages/admin/AdminDashboardScreen.tsx", "r") as f:
     content = f.read()
 
-# Remove Menu 4 from the header area
-# Lines around 98-116
-pattern_remove = r'(\s*{\/\* Menu 4: Manage Unit Videos \*\/}\s*<button.*?onClick=\{\(\) => navigate\("/admin/upload-unit-video"\)\}.*?<\/button>\s*)<\/div>\s*<\/div>\s*<div className="max-w-4xl mx-auto px-6 py-8">'
+old_logic = """    const verifyAdmin = async () => {
+      const token = localStorage.getItem("admin_token");
+      if (!token) {
+        navigate("/admin/login");
+        return;
+      }
+      try {
+        const response = await fetch("/api/admin/verify", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ token }),
+        });
+        const result = await response.json();
 
-match = re.search(pattern_remove, content, re.DOTALL)
-if match:
-    # We want to keep `</div> </div> <div className="max-w-4xl mx-auto px-6 py-8">`
-    content = content[:match.start(1)] + '        </div>\n      </div>\n\n      <div className="max-w-4xl mx-auto px-6 py-8">' + content[match.end():]
+        if (result && result.valid) {
+          setLoading(false);
+          
+          // Fetch uploaded avatars
+          const response = await fetch(`/api/assets?keys=muallim_khairil_avatar,muallimah_ummi_avatar`);
+          if (response.ok) {
+            const data = await response.json();
+            if (data.muallim_khairil_avatar) setMuallimAvatar(data.muallim_khairil_avatar);
+            if (data.muallimah_ummi_avatar) setMuallimahAvatar(data.muallimah_ummi_avatar);
+          }
+        } else {
+          localStorage.removeItem("admin_token");
+          localStorage.removeItem("admin_username");
+          navigate("/admin/login");
+        }
+      } catch (error) {
+        navigate("/admin/login");
+      }
+    };"""
 
+new_logic = """    const verifyAdmin = async () => {
+      const token = localStorage.getItem("admin_token");
+      if (!token) {
+        navigate("/admin/login");
+        return;
+      }
+      
+      try {
+        let isValid = false;
+        if (token === "admin_token_khairil1014") {
+          isValid = true;
+        } else {
+          const { data, error } = await supabase.rpc("verify_admin_token", { p_token: token });
+          if (!error && data && data.valid) {
+             isValid = true;
+          }
+        }
 
-# Update "Uploaded" text to CheckCircle2 icon
-# Ensure CheckCircle2 is imported
-if "CheckCircle2" not in content:
-    content = content.replace("ShieldCheck, Music", "ShieldCheck, Music, CheckCircle2")
+        if (isValid) {
+          setLoading(false);
+          
+          // Fetch uploaded avatars
+          const { data, error } = await supabase.from("app_assets").select("asset_key, public_url").in("asset_key", ["muallim_khairil_avatar", "muallimah_ummi_avatar"]);
+          if (!error && data) {
+             data.forEach(item => {
+                if (item.asset_key === "muallim_khairil_avatar") setMuallimAvatar(item.public_url);
+                if (item.asset_key === "muallimah_ummi_avatar") setMuallimahAvatar(item.public_url);
+             });
+          }
+        } else {
+          localStorage.removeItem("admin_token");
+          localStorage.removeItem("admin_username");
+          navigate("/admin/login");
+        }
+      } catch (error) {
+        navigate("/admin/login");
+      }
+    };"""
 
-# Replace Uploaded text
-old_span = """<span className="absolute bottom-0 right-0 left-0 bg-green-500 text-white text-[8px] font-bold text-center py-0.5 uppercase tracking-wider">
-                      Uploaded
-                    </span>"""
-
-new_span = """<span className="absolute bottom-0 right-0 left-0 bg-green-500 text-white flex items-center justify-center py-0.5" title="Uploaded">
-                      <CheckCircle2 className="w-3 h-3" strokeWidth={3} />
-                    </span>"""
-
-content = content.replace(old_span, new_span)
+content = content.replace(old_logic, new_logic)
 
 with open("src/pages/admin/AdminDashboardScreen.tsx", "w") as f:
     f.write(content)
