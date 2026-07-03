@@ -23,6 +23,7 @@ export function useAppAssets(assetKeys: string[]) {
         setLoading(false);
         return;
       }
+
       try {
         const { data, error } = await supabase
           .from("app_assets")
@@ -32,19 +33,35 @@ export function useAppAssets(assetKeys: string[]) {
         const assetMap: Record<string, string> = {};
         
         if (!error && data) {
-          data.forEach(item => {
-             assetMap[item.asset_key] = item.public_url;
+          data.forEach(item => { 
+            assetMap[item.asset_key] = item.public_url;
           });
         }
         
         // Let's add fallbacks for avatars via Supabase storage if not in db
-        if (!assetMap["muallim_khairil_avatar"] && assetKeys.includes("muallim_khairil_avatar")) {
-          const { data: urlData } = supabase.storage.from("e-kalam-assets").getPublicUrl("avatars/muallim_khairil.mp4");
-          if (urlData) assetMap["muallim_khairil_avatar"] = urlData.publicUrl;
-        }
-        if (!assetMap["muallimah_ummi_avatar"] && assetKeys.includes("muallimah_ummi_avatar")) {
-          const { data: urlData } = supabase.storage.from("e-kalam-assets").getPublicUrl("avatars/muallimah_ummi.mp4");
-          if (urlData) assetMap["muallimah_ummi_avatar"] = urlData.publicUrl;
+        if ((!assetMap["muallim_khairil_avatar"] && assetKeys.includes("muallim_khairil_avatar")) || 
+            (!assetMap["muallimah_ummi_avatar"] && assetKeys.includes("muallimah_ummi_avatar"))) {
+          
+          const { data: files } = await supabase.storage.from("e-kalam-assets").list("avatars", {
+            limit: 100,
+            sortBy: { column: 'created_at', order: 'desc' }
+          });
+
+          if (files && files.length > 0) {
+            // Find latest for khairil
+            const khairilFile = files.find(f => f.name.includes("khairil"));
+            if (khairilFile && !assetMap["muallim_khairil_avatar"]) {
+              const { data: urlData } = supabase.storage.from("e-kalam-assets").getPublicUrl(`avatars/${khairilFile.name}`);
+              if (urlData) assetMap["muallim_khairil_avatar"] = `${urlData.publicUrl}?t=${new Date(khairilFile.updated_at || "").getTime() || Date.now()}`;
+            }
+
+            // Find latest for ummi
+            const ummiFile = files.find(f => f.name.includes("ummi"));
+            if (ummiFile && !assetMap["muallimah_ummi_avatar"]) {
+              const { data: urlData } = supabase.storage.from("e-kalam-assets").getPublicUrl(`avatars/${ummiFile.name}`);
+              if (urlData) assetMap["muallimah_ummi_avatar"] = `${urlData.publicUrl}?t=${new Date(ummiFile.updated_at || "").getTime() || Date.now()}`;
+            }
+          }
         }
 
         appAssetsCache[keysParam] = assetMap;
