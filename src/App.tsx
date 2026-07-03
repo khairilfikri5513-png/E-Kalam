@@ -21,6 +21,7 @@ import UnitFourScreen from './pages/units/UnitFourScreen';
 import AdminLoginScreen from './pages/admin/AdminLoginScreen';
 import AdminDashboardScreen from './pages/admin/AdminDashboardScreen';
 import AvatarUploadScreen from './pages/admin/AvatarUploadScreen';
+import AudioUploadScreen from './pages/admin/AudioUploadScreen';
 
 import QuizPlay from './pages/quiz/QuizScreen';
 import QuizResult from './pages/quiz/QuizResultScreen';
@@ -51,6 +52,7 @@ export default function App() {
         <Route path="/admin/login" element={<AdminLoginScreen />} />
         <Route path="/admin/dashboard" element={<AdminDashboardScreen />} />
         <Route path="/admin/upload-avatar" element={<AvatarUploadScreen />} />
+        <Route path="/admin/upload-audio" element={<AudioUploadScreen />} />
       </Routes>
     </BrowserRouter>
   );

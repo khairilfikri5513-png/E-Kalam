@@ -322,6 +322,131 @@ async function startServer() {
     }
   });
 
+  // Admin Secure Upload Audio Endpoint
+  app.post("/api/admin/upload-audio", async (req, res) => {
+    try {
+      const authHeader = req.headers.authorization;
+      if (!authHeader || !authHeader.startsWith("Bearer ")) {
+        return res.status(401).json({ error: "Sila login semula sebagai admin." });
+      }
+
+      const token = authHeader.split(" ")[1];
+
+      // Verify admin token (local or Supabase RPC)
+      let isValidToken = (token === "admin_token_khairil1014");
+      let adminUsername = isValidToken ? "khairilfikri" : "";
+
+      if (!isValidToken) {
+        try {
+          const { data, error } = await supabase.rpc("verify_admin_token", {
+            p_token: token,
+          });
+          if (!error && data && data.valid) {
+            isValidToken = true;
+            adminUsername = data.username;
+          }
+        } catch (rpcErr) {
+          // Fallback failed
+        }
+      }
+
+      if (!isValidToken) {
+        return res.status(401).json({ error: "Sesi admin tidak sah atau telah tamat." });
+      }
+
+      const { fileData, assetKey, storagePath, title, mimeType } = req.body;
+
+      if (!fileData || !assetKey || !storagePath) {
+        return res.status(400).json({ error: "Butiran fail tidak lengkap." });
+      }
+
+      // Convert Base64 back to binary Buffer
+      const buffer = Buffer.from(fileData, "base64");
+
+      // Server-side validation (limit to 10MB for audio files)
+      if (buffer.length > 10 * 1024 * 1024) {
+        return res.status(400).json({ error: "Saiz fail audio tidak boleh melebihi 10MB." });
+      }
+
+      const allowedMimeTypes = [
+        "audio/mpeg",
+        "audio/mp3",
+        "audio/wav",
+        "audio/ogg",
+        "audio/x-m4a",
+        "audio/m4a",
+        "audio/aac",
+        "audio/mp4"
+      ];
+      const resolvedMime = mimeType || "audio/mpeg";
+      if (!allowedMimeTypes.includes(resolvedMime)) {
+        return res.status(400).json({ error: "Hanya fail format audio (MP3, WAV, OGG, M4A, AAC) dibenarkan." });
+      }
+
+      // Save file locally for zero-config persistence
+      let ext = "mp3";
+      if (resolvedMime.includes("wav")) ext = "wav";
+      else if (resolvedMime.includes("ogg")) ext = "ogg";
+      else if (resolvedMime.includes("m4a")) ext = "m4a";
+      else if (resolvedMime.includes("aac")) ext = "aac";
+      else if (resolvedMime.includes("mp4")) ext = "mp4";
+
+      const fileName = `uploaded_${assetKey}.${ext}`;
+      let finalUrl = `/assets/${fileName}`;
+
+      try {
+        fs.writeFileSync(path.join(assetsDir, fileName), buffer);
+        saveLocalAsset(assetKey, finalUrl);
+      } catch (localErr) {
+        console.error("Local file save error:", localErr);
+      }
+
+      // Best-effort upload to Supabase Storage
+      try {
+        const { data: uploadData, error: uploadError } = await supabase.storage
+          .from("e-kalam-assets")
+          .upload(storagePath, buffer, {
+            contentType: resolvedMime,
+            upsert: true,
+          });
+
+        if (!uploadError) {
+          const { data: urlData } = supabase.storage
+            .from("e-kalam-assets")
+            .getPublicUrl(storagePath);
+          if (urlData && urlData.publicUrl) {
+            finalUrl = `${urlData.publicUrl}?t=${new Date().getTime()}`;
+            saveLocalAsset(assetKey, finalUrl);
+          }
+        }
+      } catch (storageErr) {
+        // Silent catch fallback to local asset URL
+      }
+
+      // Best-effort database upsert
+      try {
+        await supabase.from("app_assets").upsert(
+          {
+            asset_key: assetKey,
+            title: title || "Audio",
+            file_path: storagePath,
+            public_url: finalUrl,
+            asset_type: "audio",
+            updated_at: new Date().toISOString(),
+          },
+          { onConflict: "asset_key" }
+        );
+      } catch (dbErr) {
+        // Silent catch fallback
+      }
+
+      return res.json({ success: true, publicUrl: finalUrl });
+    } catch (err: any) {
+      console.error("Upload Audio Endpoint Error:", err);
+      return res.status(500).json({ error: "Ralat pelayan semasa memuat naik audio." });
+    }
+  });
+
   // Vite middleware for development
   if (process.env.NODE_ENV !== "production") {
     const vite = await createViteServer({

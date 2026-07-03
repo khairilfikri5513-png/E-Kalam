@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "../../lib/supabase";
-import { LogOut, Image as ImageIcon, Upload, ShieldCheck } from "lucide-react";
+import { LogOut, Image as ImageIcon, Upload, ShieldCheck, Music } from "lucide-react";
 import MuallimKhairilAvatarLocal from "../../assets/images/muallim-khairil-avatar.png";
 import MuallimahUmmiAvatarLocal from "../../assets/images/muallimah-ummi-avatar.png";
 
@@ -114,7 +114,7 @@ export default function AdminDashboardScreen() {
           Pengurusan Kandungan
         </h2>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {/* Menu 1 */}
           <button
             onClick={() => navigate("/admin/upload-avatar?type=muallim")}
@@ -181,6 +181,26 @@ export default function AdminDashboardScreen() {
               <p className="text-slate-500 text-sm">
                 Kemaskini gambar avatar Muallimah Ummi untuk seksyen Kandungan
                 Pembelajaran.
+              </p>
+            </div>
+          </button>
+
+          {/* Menu 3: Manage Audios */}
+          <button
+            onClick={() => navigate("/admin/upload-audio")}
+            className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 hover:border-amber-400 hover:shadow-md transition-all text-left group flex flex-col justify-between h-full min-h-[180px]"
+          >
+            <div className="w-full">
+              <div className="flex items-center justify-between mb-4">
+                <div className="w-12 h-12 bg-amber-100 text-amber-600 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
+                  <Music className="w-6 h-6" />
+                </div>
+              </div>
+              <h3 className="font-bold text-slate-800 text-lg mb-2">
+                Muat Naik Audio Latihan
+              </h3>
+              <p className="text-slate-500 text-sm">
+                Urus dan muat naik rakaman suara sebenar untuk Latihan Membaca & Latihan Mendengar.
               </p>
             </div>
           </button>

@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { activitiesData, playArabicAudio } from '../data/mockData';
 import { CheckCircle2, XCircle, ArrowLeft, Volume2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useAppStore } from '../store/useAppStore';
 import { useNavigate } from 'react-router-dom';
+import { useAppAssets } from '../hooks/useAppAssets';
 
 export default function Read() {
   const readingActivities = activitiesData.filter(a => a.skillType === 'reading');
@@ -16,6 +17,51 @@ export default function Read() {
   const currentActivity = readingActivities[currentIndex];
 
   if (!currentActivity) return <div className="p-6">Tiada latihan membaca.</div>;
+
+  // Custom audio integration
+  const activityKeys = readingActivities.map(act => `audio_activity_${act.id}`);
+  const { assets } = useAppAssets(activityKeys);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  const handlePlayAudio = () => {
+    const customUrl = assets[`audio_activity_${currentActivity.id}`];
+    if (customUrl) {
+      if (audioRef.current) {
+        audioRef.current.pause();
+      }
+      setIsPlaying(true);
+      const audio = new Audio(customUrl);
+      audioRef.current = audio;
+      audio.play().catch(err => {
+        console.warn("Audio playback error, falling back to speech synthesis:", err);
+        playArabicAudio(currentActivity.arabicText || '');
+        setIsPlaying(false);
+      });
+      audio.onended = () => {
+        setIsPlaying(false);
+      };
+    } else {
+      playArabicAudio(currentActivity.arabicText || '');
+    }
+  };
+
+  // Stop audio when shifting slides
+  useEffect(() => {
+    if (audioRef.current) {
+      audioRef.current.pause();
+      setIsPlaying(false);
+    }
+  }, [currentIndex]);
+
+  // Clean up audio on unmount
+  useEffect(() => {
+    return () => {
+      if (audioRef.current) {
+        audioRef.current.pause();
+      }
+    };
+  }, []);
 
   const handleSelect = (choice: string) => {
     if (selectedAnswer !== null) return;
@@ -65,8 +111,10 @@ export default function Read() {
            <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl from-purple/10 to-transparent rounded-bl-full"></div>
            
            <button 
-             onClick={() => playArabicAudio(currentActivity.arabicText || '')}
-             className="absolute top-4 right-4 text-purple bg-purple/10 p-2.5 rounded-full hover:bg-purple/20 active:scale-90 transition-transform"
+             onClick={handlePlayAudio}
+             className={`absolute top-4 right-4 text-purple p-2.5 rounded-full hover:bg-purple/20 active:scale-90 transition-all ${
+               isPlaying ? 'bg-purple/30 animate-pulse scale-110' : 'bg-purple/10'
+             }`}
            >
              <Volume2 className="w-5 h-5" />
            </button>
