@@ -4,11 +4,12 @@ interface MediaAvatarProps {
   src: string;
   alt: string;
   className?: string;
+  priority?: boolean;
 }
 
 const videoRegistry = new Set<HTMLVideoElement>();
 
-export function MediaAvatar({ src, alt, className }: MediaAvatarProps) {
+export function MediaAvatar({ src, alt, className, priority = false }: MediaAvatarProps) {
   const isVideo = src && src.match(/\.(mp4|webm|ogg|mov)(\?.*)?$/i);
   const videoRef = useRef<HTMLVideoElement>(null);
   const [autoplayBlocked, setAutoplayBlocked] = useState(false);
@@ -78,7 +79,7 @@ export function MediaAvatar({ src, alt, className }: MediaAvatarProps) {
           src={src}
           controls
           playsInline
-          preload="metadata"
+          preload={priority ? "auto" : "metadata"}
           className={className}
         >
           Browser anda tidak menyokong tag video.

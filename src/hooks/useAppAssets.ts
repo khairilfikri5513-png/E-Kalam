@@ -11,11 +11,15 @@ export interface AppAsset {
 
 const appAssetsCache: Record<string, Record<string, string>> = {};
 
-export function useAppAssets(assetKeys: string[]) {
+export function useAppAssets(assetKeys: string[], skip: boolean = false) {
   const [assets, setAssets] = useState<Record<string, string>>({});
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(!skip);
 
   useEffect(() => {
+    if (skip) {
+      return;
+    }
+
     async function fetchAssets() {
       const keysParam = assetKeys.join(",");
       if (appAssetsCache[keysParam]) {
@@ -78,7 +82,7 @@ export function useAppAssets(assetKeys: string[]) {
     } else {
       setLoading(false);
     }
-  }, [assetKeys.join(",")]);
+  }, [assetKeys.join(","), skip]);
 
   return { assets, loading };
 }

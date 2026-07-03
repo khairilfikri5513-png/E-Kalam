@@ -1,6 +1,6 @@
 import { Skeleton } from "../components/ui/Skeleton";
 import { MediaAvatar } from "../components/MediaAvatar";
-import React from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   Bell, Headphones, BookOpen, Trophy, Bot, 
@@ -72,10 +72,33 @@ const contentsUnits = [
 
 export default function Home() {
   const navigate = useNavigate();
-  const { assets, loading: assetsLoading } = useAppAssets(['muallim_khairil_avatar', 'muallimah_ummi_avatar']);
+  
+  const [loadMuallimah, setLoadMuallimah] = useState(false);
+  const muallimahRef = useRef<HTMLDivElement>(null);
 
-  const muallimKhairilAvatar = assets.muallim_khairil_avatar || MuallimKhairilAvatarLocal;
-  const muallimahUmmiAvatar = assets.muallimah_ummi_avatar || MuallimahUmmiAvatarLocal;
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) {
+          setLoadMuallimah(true);
+          observer.disconnect();
+        }
+      },
+      { rootMargin: "600px" } // Load earlier
+    );
+
+    if (muallimahRef.current) {
+      observer.observe(muallimahRef.current);
+    }
+
+    return () => observer.disconnect();
+  }, []);
+
+  const { assets: muallimAssets, loading: muallimLoading } = useAppAssets(['muallim_khairil_avatar']);
+  const { assets: muallimahAssets, loading: muallimahLoading } = useAppAssets(['muallimah_ummi_avatar'], !loadMuallimah);
+
+  const muallimKhairilAvatar = muallimAssets.muallim_khairil_avatar || MuallimKhairilAvatarLocal;
+  const muallimahUmmiAvatar = muallimahAssets.muallimah_ummi_avatar || MuallimahUmmiAvatarLocal;
 
   const handleFeatureClick = (path: string) => {
     navigate(path);
@@ -167,7 +190,7 @@ export default function Home() {
           
           <div className="relative z-10 flex flex-col items-center w-full">
             <div className="w-64 h-80 relative mb-4">
-              {assetsLoading ? <Skeleton className="w-full h-full rounded-2xl" /> : <MediaAvatar src={muallimKhairilAvatar} alt="Muallim Khairil" className="w-full h-full object-contain drop-shadow-lg rounded-2xl" />}
+              {muallimLoading ? <Skeleton className="w-full h-full rounded-2xl" /> : <MediaAvatar src={muallimKhairilAvatar} alt="Muallim Khairil" priority={true} className="w-full h-full object-contain drop-shadow-lg rounded-2xl" />}
             </div>
             
             <div className="bg-white w-full px-5 py-4 rounded-2xl rounded-tr-sm shadow-md border border-slate-100 relative mb-6">
@@ -237,13 +260,13 @@ export default function Home() {
           <div className="flex flex-col items-center">
             
             {/* Muallimah Ummi Card Section (Styled identical to Muallim Khairil's) */}
-            <div className="relative w-full max-w-sm mx-auto bg-gradient-to-br from-white to-purple-50 rounded-[2rem] shadow-xl border border-purple-100/60 p-6 flex flex-col items-center overflow-hidden mb-8">
+            <div className="relative w-full max-w-sm mx-auto bg-gradient-to-br from-white to-purple-50 rounded-[2rem] shadow-xl border border-purple-100/60 p-6 flex flex-col items-center overflow-hidden mb-8" ref={muallimahRef}>
               {/* Decorative pattern background */}
               <div className="absolute inset-0 bg-app-pattern opacity-30"></div>
               
               <div className="relative z-10 flex flex-col items-center w-full">
                 <div className="w-64 h-80 relative mb-4">
-                  {assetsLoading ? <Skeleton className="w-full h-full rounded-2xl" /> : <MediaAvatar src={muallimahUmmiAvatar} alt="Muallimah Ummi" className="w-full h-full object-contain drop-shadow-lg rounded-2xl" />}
+                  {muallimahLoading ? <Skeleton className="w-full h-full rounded-2xl" /> : <MediaAvatar src={muallimahUmmiAvatar} alt="Muallimah Ummi" className="w-full h-full object-contain drop-shadow-lg rounded-2xl" />}
                 </div>
                 
                 <div className="bg-white w-full px-5 py-4 rounded-2xl rounded-tr-sm shadow-md border border-purple-100/40 relative">

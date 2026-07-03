@@ -13,18 +13,30 @@ export interface UnitVideoData {
   status: string;
 }
 
+const videoCache: Record<string, { url: string | null; timestamp: number }> = {};
+const CACHE_DURATION = 1000 * 60 * 10; // 10 minutes
+
 export function useUnitVideo(unitId: string) {
   const [videoUrl, setVideoUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchVideo = async () => {
+  const fetchVideo = async (force = false) => {
+    if (!force) {
+      const cached = videoCache[unitId];
+      if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
+        setVideoUrl(cached.url);
+        setLoading(false);
+        return;
+      }
+    }
+
     setLoading(true);
     setError(null);
     try {
       const { data, error } = await supabase
         .from("unit_videos")
-        .select("*")
+        .select("id, title, storage_path, video_url, mime_type, status, uploaded_at")
         .eq("unit_id", unitId)
         .eq("status", "active")
         .order("uploaded_at", { ascending: false })
@@ -35,21 +47,20 @@ export function useUnitVideo(unitId: string) {
         if (error.code === 'PGRST116') {
           // No active video found
           setVideoUrl(null);
+          videoCache[unitId] = { url: null, timestamp: Date.now() };
         } else {
           throw error;
         }
       } else if (data) {
-        // We can use the public URL or generate signed URL
-        // Since e-kalam-assets is public, we can just use getPublicUrl to be safe
-        // Or if video_url is saved, we can use that.
-        if (data.video_url) {
-          setVideoUrl(data.video_url);
-        } else {
+        let finalUrl = data.video_url;
+        if (!finalUrl) {
           const { data: urlData } = supabase.storage
             .from("e-kalam-assets")
             .getPublicUrl(data.storage_path);
-          setVideoUrl(urlData.publicUrl);
+          finalUrl = urlData.publicUrl;
         }
+        setVideoUrl(finalUrl);
+        videoCache[unitId] = { url: finalUrl, timestamp: Date.now() };
       }
     } catch (err: any) {
       console.error("Failed to fetch unit video:", err);
@@ -63,5 +74,5 @@ export function useUnitVideo(unitId: string) {
     fetchVideo();
   }, [unitId]);
 
-  return { videoUrl, loading, error, refetch: fetchVideo };
+  return { videoUrl, loading, error, refetch: () => fetchVideo(true) };
 }
