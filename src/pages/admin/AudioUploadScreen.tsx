@@ -67,28 +67,14 @@ export default function AudioUploadScreen() {
 
         // 3. Fetch app assets of type 'audio'
         const keys = activitiesData.map(act => `audio_activity_${act.id}`);
-        const { data, error } = await supabase
-          .from("app_assets")
-          .select("asset_key, public_url")
-          .in("asset_key", keys);
-
-        if (!error && data) {
-          const audioMap: Record<string, string> = {};
-          data.forEach(item => {
-            if (item.public_url) {
-              audioMap[item.asset_key] = item.public_url;
-            }
-          });
-          setUploadedAudios(audioMap);
-        } else {
-          // Fallback check local /api/assets if supabase tables empty or offline
-          const keysParam = keys.join(",");
-          const localRes = await fetch(`/api/assets?keys=${encodeURIComponent(keysParam)}`);
-          if (localRes.ok) {
-            const data = await localRes.json();
-            setUploadedAudios(data);
-          }
+        
+        const keysParam = keys.join(",");
+        const response = await fetch(`/api/assets?keys=${encodeURIComponent(keysParam)}`);
+        if (response.ok) {
+          const data = await response.json();
+          setUploadedAudios(data);
         }
+
       } catch (err) {
         console.warn("Auth / Fetch Audio Assets Error:", err);
       } finally {
@@ -158,11 +144,11 @@ export default function AudioUploadScreen() {
         return;
       }
 
-      if (file.size > 10 * 1024 * 1024) {
-        // 10MB limit
+      if (file.size > 5 * 1024 * 1024) {
+        // 5MB limit
         setStatus({
           type: "error",
-          message: "Saiz audio tidak boleh melebihi 10MB.",
+          message: "Saiz audio tidak boleh melebihi 5MB.",
         });
         return;
       }
@@ -451,7 +437,7 @@ export default function AudioUploadScreen() {
                     ) : (
                       <>
                         <p className="text-xs font-bold text-slate-700">Klik atau heret fail audio</p>
-                        <p className="text-[10px] text-slate-400 mt-1">MP3, WAV, M4A (Maks 10MB)</p>
+                        <p className="text-[10px] text-slate-400 mt-1">MP3, WAV, M4A (Maks 5MB)</p>
                       </>
                     )}
                   </div>

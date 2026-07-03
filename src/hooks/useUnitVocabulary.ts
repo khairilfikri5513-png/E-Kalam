@@ -472,12 +472,19 @@ const dummyUnitFourVocabulary: UnitVocabulary[] = [
   }
 ];
 
+const vocabCache: Record<string, UnitVocabulary[]> = {};
+
 export function useUnitVocabulary(unitKey: string) {
   const [vocabulary, setVocabulary] = useState<UnitVocabulary[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     async function fetchVocab() {
+      if (vocabCache[unitKey]) {
+        setVocabulary(vocabCache[unitKey]);
+        setLoading(false);
+        return;
+      }
       try {
         const { data, error } = await supabase
           .from("unit_vocabulary")
@@ -498,6 +505,7 @@ export function useUnitVocabulary(unitKey: string) {
             imageUrl: item.image_url,
             colorHex: item.color_hex,
           }));
+          vocabCache[unitKey] = mappedData;
           setVocabulary(mappedData);
         } else {
           // Fallback to dummy data based on unitKey

@@ -45,6 +45,7 @@ export const VocabularyCard: React.FC<VocabularyCardProps> = ({
           <img
             src={item.imageUrl}
             alt={item.arabic}
+            loading="lazy"
             className="h-20 w-20 object-contain drop-shadow-sm mix-blend-multiply"
           />
         ) : (

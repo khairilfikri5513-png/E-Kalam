@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "../../lib/supabase";
 import { uploadAvatarToSupabase } from "../../services/avatarUploadService";
+import { VideoWithAudioCheck } from "../../components/VideoWithAudioCheck";
 import {
   ArrowLeft,
   UploadCloud,
@@ -41,8 +42,30 @@ export default function AvatarUploadScreen() {
     message: string;
   } | null>(null);
   const [currentAvatarUrl, setCurrentAvatarUrl] = useState<string | null>(null);
+  const [historyVideos, setHistoryVideos] = useState<any[]>([]);
+  const [loadingHistory, setLoadingHistory] = useState(false);
+
+
+  const fetchHistory = async () => {
+    setLoadingHistory(true);
+    try {
+      const { data, error } = await supabase.storage.from("e-kalam-assets").list("avatars", {
+        sortBy: { column: "created_at", order: "desc" },
+      });
+      if (data) {
+        const baseName = selectedConfig.assetKey === 'muallim_khairil_avatar' ? 'muallim-khairil-avatar' : 'muallimah-ummi-avatar';
+        const filtered = data.filter((f: any) => f.name.startsWith(baseName) && f.metadata?.mimetype?.startsWith('video/'));
+        setHistoryVideos(filtered);
+      }
+    } catch (err) {
+      console.warn("Failed to fetch history", err);
+    } finally {
+      setLoadingHistory(false);
+    }
+  };
 
   useEffect(() => {
+
     const checkUserAndFetchAvatar = async () => {
       const token = localStorage.getItem("admin_token");
       if (!token) {
@@ -70,15 +93,16 @@ export default function AvatarUploadScreen() {
         }
 
         // 2. Fetch current avatar
-        const { data, error } = await supabase
-          .from("app_assets")
-          .select("public_url")
-          .eq("asset_key", selectedConfig.assetKey)
-          .single();
-
-        if (data && data.public_url) {
-          setCurrentAvatarUrl(data.public_url);
+        
+        const response = await fetch(`/api/assets?keys=${selectedConfig.assetKey}`);
+        if (response.ok) {
+          const data = await response.json();
+          if (data && data[selectedConfig.assetKey]) {
+            setCurrentAvatarUrl(data[selectedConfig.assetKey]);
+          }
+          fetchHistory();
         }
+
       } catch (err) {
         console.warn("Auth / Fetch Avatar Error:", err);
       }
@@ -92,20 +116,21 @@ export default function AvatarUploadScreen() {
       const file = e.target.files[0];
 
       // Validation
-      const validTypes = ["image/jpeg", "image/png", "image/jpg"];
-      if (!validTypes.includes(file.type)) {
+      const validVideoTypes = ["video/mp4", "video/webm", "video/ogg", "video/quicktime"];
+      const isVideo = validVideoTypes.includes(file.type);
+      
+      if (!isVideo) {
         setStatus({
           type: "error",
-          message: "Sila pilih fail gambar format PNG, JPG, atau JPEG.",
+          message: "Hanya fail video MP4 atau WebM dibenarkan untuk avatar.",
         });
         return;
       }
 
-      if (file.size > 5 * 1024 * 1024) {
-        // 5MB limit
+      if (isVideo && file.size > 50 * 1024 * 1024) {
         setStatus({
           type: "error",
-          message: "Saiz gambar tidak boleh melebihi 5MB.",
+          message: "Saiz video tidak boleh melebihi 50MB.",
         });
         return;
       }
@@ -129,15 +154,22 @@ export default function AvatarUploadScreen() {
     setStatus(null);
 
     try {
+      
+      const ext = selectedFile.name.split('.').pop() || 'png';
+      const baseName = selectedConfig.assetKey === 'muallim_khairil_avatar' ? 'muallim-khairil-avatar' : 'muallimah-ummi-avatar';
+      const dynamicStoragePath = `avatars/${baseName}_${Date.now()}.${ext}`;
+
       const url = await uploadAvatarToSupabase({
         file: selectedFile,
         assetKey: selectedConfig.assetKey,
-        storagePath: selectedConfig.storagePath,
+        storagePath: dynamicStoragePath,
         title: selectedConfig.title,
       });
 
+
       setStatus({ type: "success", message: "Avatar berjaya dikemas kini." });
       setCurrentAvatarUrl(url);
+      fetchHistory();
 
       // Cleanup
       if (previewUrl) {
@@ -178,7 +210,7 @@ export default function AvatarUploadScreen() {
             {selectedConfig.title}
           </h2>
           <p className="text-slate-500 text-sm mb-8">
-            Pilih dan muat naik gambar baharu untuk dipaparkan dalam aplikasi.
+            Pilih dan muat naik gambar atau video baharu untuk dipaparkan dalam aplikasi.
           </p>
 
           {/* Status Message */}
@@ -199,13 +231,13 @@ export default function AvatarUploadScreen() {
             {/* Upload Area */}
             <div>
               <label className="block text-sm font-bold text-slate-700 mb-3">
-                Pilih Gambar
+                Pilih Gambar / Video
               </label>
 
               <div className="relative group">
                 <input
                   type="file"
-                  accept="image/png, image/jpeg, image/jpg"
+                  accept="video/mp4, video/webm, video/ogg, video/quicktime"
                   onChange={handleFileChange}
                   className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
                 />
@@ -217,11 +249,11 @@ export default function AvatarUploadScreen() {
                   />
                   <p className="text-sm font-medium text-slate-700 mb-1">
                     {previewUrl
-                      ? "Klik untuk tukar gambar"
-                      : "Klik untuk pilih gambar"}
+                      ? "Klik untuk tukar video"
+                      : "Klik untuk pilih video"}
                   </p>
                   <p className="text-xs text-slate-500">
-                    PNG, JPG sehingga 5MB
+                    Video (MP4, WEBM) max 50MB
                   </p>
                 </div>
               </div>
@@ -243,16 +275,12 @@ export default function AvatarUploadScreen() {
             {/* Preview Area */}
             <div>
               <label className="block text-sm font-bold text-slate-700 mb-3">
-                Preview ({previewUrl ? "Gambar Baharu" : "Avatar Semasa"})
+                Preview ({previewUrl ? "Media Baharu" : "Avatar Semasa"})
               </label>
 
               <div className="bg-slate-100 rounded-2xl h-64 border border-slate-200 flex items-center justify-center overflow-hidden p-4 relative">
                 {previewUrl || currentAvatarUrl ? (
-                  <img
-                    src={previewUrl || currentAvatarUrl!}
-                    alt="Preview"
-                    className="max-w-full max-h-full object-contain drop-shadow-md"
-                  />
+                  <VideoWithAudioCheck src={previewUrl || currentAvatarUrl!} controls playsInline preload="metadata" className="max-w-full max-h-full object-contain drop-shadow-md rounded-lg" />
                 ) : (
                   <div className="text-slate-400 flex flex-col items-center">
                     <ImageIcon className="w-8 h-8 mb-2 opacity-50" />
@@ -268,6 +296,55 @@ export default function AvatarUploadScreen() {
               </div>
             </div>
           </div>
+        </div>
+
+        {/* History Section */}
+        <div className="mt-8 bg-white rounded-3xl p-6 sm:p-8 shadow-sm border border-slate-200">
+          <h3 className="text-lg font-bold text-slate-800 mb-6">Senarai Video Terdahulu</h3>
+          
+          {loadingHistory ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {[1, 2].map((i) => (
+                <div key={i} className="animate-pulse bg-slate-100 h-64 rounded-xl"></div>
+              ))}
+            </div>
+          ) : historyVideos.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {historyVideos.map((video) => {
+                const videoUrl = `${import.meta.env.VITE_SUPABASE_URL || "https://fcsyiabtsxpsccsvhsrl.supabase.co"}/storage/v1/object/public/e-kalam-assets/avatars/${video.name}`;
+                return (
+                  <div key={video.id} className="border border-slate-200 rounded-xl overflow-hidden bg-slate-50 flex flex-col">
+                    <div className="bg-slate-200 h-48 relative flex items-center justify-center">
+                      <VideoWithAudioCheck src={videoUrl} controls playsInline preload="metadata" className="max-w-full max-h-full" />
+                    </div>
+                    <div className="p-4 flex flex-col gap-1.5 text-sm">
+                      <div className="font-bold text-slate-800 break-all">{video.name}</div>
+                      <div className="text-slate-600">
+                        <span className="font-semibold">Nama Pengguna:</span> {selectedConfig.label}
+                      </div>
+                      <div className="text-slate-600">
+                        <span className="font-semibold">Jenis Fail:</span> {video.metadata?.mimetype}
+                      </div>
+                      <div className="text-slate-600">
+                        <span className="font-semibold">Saiz Fail:</span> {(video.metadata?.size / (1024 * 1024)).toFixed(2)} MB
+                      </div>
+                      <div className="text-slate-600">
+                        <span className="font-semibold">Tarikh Upload:</span> {new Date(video.created_at).toLocaleString('ms-MY')}
+                      </div>
+                      <div className="text-green-600 font-semibold mt-1 flex items-center gap-1">
+                        <CheckCircle2 className="w-4 h-4" /> Berjaya diupload
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="text-center py-8 text-slate-500">
+              <ImageIcon className="w-12 h-12 mx-auto mb-3 opacity-20" />
+              <p>Tiada rekod video terdahulu.</p>
+            </div>
+          )}
         </div>
       </div>
     </div>

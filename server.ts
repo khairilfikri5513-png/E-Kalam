@@ -4,7 +4,6 @@ import { createServer as createViteServer } from "vite";
 import { GoogleGenAI } from "@google/genai";
 import dotenv from "dotenv";
 import { createClient } from "@supabase/supabase-js";
-import fs from "fs";
 
 dotenv.config();
 
@@ -12,41 +11,13 @@ const supabaseUrl = process.env.VITE_SUPABASE_URL || "https://fcsyiabtsxpsccsvhs
 const supabaseAnonKey = process.env.VITE_SUPABASE_ANON_KEY || "sb_publishable_XIfi-lEqk_xlj0sLdXmT1A_VEoebqiF";
 const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
-// Initialize assets directory if not exists
-const assetsDir = path.join(process.cwd(), "assets");
-if (!fs.existsSync(assetsDir)) {
-  fs.mkdirSync(assetsDir, { recursive: true });
-}
-
-const localAssetsPath = path.join(assetsDir, "local_assets.json");
-let localAssets: Record<string, string> = {};
-if (fs.existsSync(localAssetsPath)) {
-  try {
-    localAssets = JSON.parse(fs.readFileSync(localAssetsPath, "utf-8"));
-  } catch (e) {
-    console.warn("Error reading local_assets.json, starting fresh", e);
-  }
-}
-
-function saveLocalAsset(key: string, url: string) {
-  localAssets[key] = url;
-  try {
-    fs.writeFileSync(localAssetsPath, JSON.stringify(localAssets, null, 2), "utf-8");
-  } catch (e) {
-    console.error("Error writing local_assets.json", e);
-  }
-}
-
 async function startServer() {
   const app = express();
   const PORT = 3000;
 
-  // Serve static assets
-  app.use("/assets", express.static(assetsDir));
-
   // Increase payload limit for base64 image uploads
-  app.use(express.json({ limit: "50mb" }));
-  app.use(express.urlencoded({ limit: "50mb", extended: true }));
+  app.use(express.json({ limit: "100mb" }));
+  app.use(express.urlencoded({ limit: "100mb", extended: true }));
 
   // AI Route
   app.post("/api/chat", async (req, res) => {
@@ -90,6 +61,7 @@ async function startServer() {
 
   // Get all assets (handles both Supabase and local cache/defaults)
   app.get("/api/assets", async (req, res) => {
+    res.setHeader("Cache-Control", "public, max-age=3600");
     try {
       const keysQuery = req.query.keys as string;
       const keys = keysQuery ? keysQuery.split(",") : [];
@@ -107,24 +79,62 @@ async function startServer() {
         // Fallback silently if table doesn't exist yet
       }
 
+      
+      let storageAvatars: any[] = [];
+      let storageAudios: any[] = [];
+      let storageUnitVideos: any[] = [];
+      try {
+        const { data: avData } = await supabase.storage.from("e-kalam-assets").list("avatars");
+        if (avData) storageAvatars = avData;
+        const { data: auData } = await supabase.storage.from("e-kalam-assets").list("audios");
+        if (auData) storageAudios = auData;
+        const { data: vidData } = await supabase.storage.from("e-kalam-assets").list("unit_videos");
+        if (vidData) storageUnitVideos = vidData;
+      } catch (e) { }
+
       const result: Record<string, string> = {};
       const defaults: Record<string, string> = {
         muallim_khairil_avatar: "/assets/muallim_khairil.png",
         muallimah_ummi_avatar: "/assets/muallimah_ummi.png",
       };
 
-      keys.forEach((key) => {
+      for (const key of keys) {
         const dbFound = dbAssets.find((a) => a.asset_key === key);
         if (dbFound && dbFound.public_url) {
           result[key] = dbFound.public_url;
-        } else if (localAssets[key]) {
-          result[key] = localAssets[key];
-        } else if (defaults[key]) {
-          result[key] = defaults[key];
         } else {
-          result[key] = "";
+          if (key === "muallim_khairil_avatar" || key === "muallimah_ummi_avatar") {
+            const baseName = key === "muallim_khairil_avatar" ? "muallim-khairil-avatar" : "muallimah-ummi-avatar";
+            const matches = storageAvatars.filter((f: any) => f.name.startsWith(baseName));
+            if (matches.length > 0) {
+              matches.sort((a: any, b: any) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime());
+              result[key] = `${supabaseUrl}/storage/v1/object/public/e-kalam-assets/avatars/${matches[0].name}?t=${Date.now()}`;
+            } else {
+              result[key] = defaults[key] || "";
+            }
+          } else if (key.startsWith("audio_activity_")) {
+            const matches = storageAudios.filter((f: any) => f.name.startsWith(`${key}_`));
+            if (matches.length > 0) {
+              matches.sort((a: any, b: any) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime());
+              result[key] = `${supabaseUrl}/storage/v1/object/public/e-kalam-assets/audios/${matches[0].name}?t=${Date.now()}`;
+            } else {
+              result[key] = "";
+            }
+          } else if (key.startsWith("unit_")) {
+            const baseName = key.replace(/_/g, '-');
+            const matches = storageUnitVideos.filter((f: any) => f.name.startsWith(`${baseName}_`));
+            if (matches.length > 0) {
+              matches.sort((a: any, b: any) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime());
+              result[key] = `${supabaseUrl}/storage/v1/object/public/e-kalam-assets/unit_videos/${matches[0].name}?t=${Date.now()}`;
+            } else {
+              result[key] = "";
+            }
+          } else {
+            result[key] = defaults[key] || "";
+          }
         }
-      });
+      }
+
 
       return res.json(result);
     } catch (err) {
@@ -212,6 +222,116 @@ async function startServer() {
     }
   });
 
+  // Admin Secure Upload Unit Video Endpoint
+  app.post("/api/admin/upload-unit-video", async (req, res) => {
+    try {
+      const authHeader = req.headers.authorization;
+      if (!authHeader || !authHeader.startsWith("Bearer ")) {
+        return res.status(401).json({ error: "Sila login semula sebagai admin." });
+      }
+
+      const token = authHeader.split(" ")[1];
+
+      // Verify admin token (local or Supabase RPC)
+      let isValidToken = (token === "admin_token_khairil1014");
+      let adminUsername = isValidToken ? "khairilfikri" : "";
+
+      if (!isValidToken) {
+        try {
+          const { data, error } = await supabase.rpc("verify_admin_token", {
+            p_token: token,
+          });
+          if (!error && data && data.valid) {
+            isValidToken = true;
+            adminUsername = data.username;
+          }
+        } catch (rpcErr) {
+          // Fallback failed
+        }
+      }
+
+      if (!isValidToken) {
+        return res.status(401).json({ error: "Sesi admin tidak sah atau telah tamat." });
+      }
+
+      const { fileData, assetKey, storagePath, title, mimeType } = req.body;
+
+      if (!fileData || !assetKey || !storagePath) {
+        return res.status(400).json({ error: "Butiran fail tidak lengkap." });
+      }
+
+      // Convert Base64 back to binary Buffer
+      const buffer = Buffer.from(fileData, "base64");
+
+      // Server-side validation
+      if (buffer.length > 50 * 1024 * 1024) {
+        return res.status(400).json({ error: "Saiz video tidak boleh melebihi 50MB." });
+      }
+
+      const allowedMimeTypes = ["video/mp4", "video/webm"];
+      const resolvedMime = mimeType || "video/mp4";
+      if (!allowedMimeTypes.includes(resolvedMime)) {
+        return res.status(400).json({ error: "Hanya fail format video (MP4, WEBM) dibenarkan." });
+      }
+
+      let finalUrl = "";
+
+      // Upload to Supabase Storage
+      try {
+        const { data: uploadData, error: uploadError } = await supabase.storage
+          .from("e-kalam-assets")
+          .upload(storagePath, buffer, {
+            contentType: resolvedMime,
+            upsert: true,
+          });
+
+        if (uploadError) {
+          throw uploadError;
+        }
+
+        const { data: urlData } = supabase.storage
+          .from("e-kalam-assets")
+          .getPublicUrl(storagePath);
+          
+        if (urlData && urlData.publicUrl) {
+          finalUrl = `${urlData.publicUrl}?t=${new Date().getTime()}`;
+        } else {
+          throw new Error("Gagal mendapatkan URL dari Supabase.");
+        }
+      } catch (storageErr) {
+        console.error("Storage upload error:", storageErr);
+        return res.status(500).json({ error: "Gagal memuat naik video ke Supabase Storage." });
+      }
+
+      // Database insert to unit_videos
+      try {
+        // We deactivate old videos for this unit to keep only the latest active
+        await supabase.from("unit_videos").update({ status: "inactive" }).eq("unit_id", assetKey);
+
+        const { error: dbError } = await supabase.from("unit_videos").insert({
+          unit_id: assetKey,
+          title: title || "Video Pembelajaran",
+          file_name: storagePath.split('/').pop() || "video.mp4",
+          storage_path: storagePath,
+          video_url: finalUrl,
+          mime_type: resolvedMime,
+          file_size: buffer.length,
+          uploaded_by: adminUsername || "admin",
+          status: "active"
+        });
+        
+        if (dbError) throw dbError;
+      } catch (dbErr) {
+        console.error("Database insert error:", dbErr);
+        // We do not throw to allow storage upload to succeed, but ideally we should
+      }
+
+      return res.json({ success: true, publicUrl: finalUrl });
+    } catch (err: any) {
+      console.error("Upload Unit Video Endpoint Error:", err);
+      return res.status(500).json({ error: "Ralat pelayan semasa memuat naik video pembelajaran." });
+    }
+  });
   // Admin Secure Upload Avatar Endpoint
   app.post("/api/admin/upload-avatar", async (req, res) => {
     try {
@@ -254,29 +374,19 @@ async function startServer() {
       const buffer = Buffer.from(fileData, "base64");
 
       // Server-side validation
-      if (buffer.length > 5 * 1024 * 1024) {
-        return res.status(400).json({ error: "Saiz fail tidak boleh melebihi 5MB." });
+      if (buffer.length > 50 * 1024 * 1024) {
+        return res.status(400).json({ error: "Saiz video tidak boleh melebihi 50MB." });
       }
 
-      const allowedMimeTypes = ["image/png", "image/jpeg", "image/jpg"];
-      const resolvedMime = mimeType || "image/png";
+      const allowedMimeTypes = ["video/mp4", "video/webm", "video/ogg", "video/quicktime"];
+      const resolvedMime = mimeType || "video/mp4";
       if (!allowedMimeTypes.includes(resolvedMime)) {
-        return res.status(400).json({ error: "Hanya fail format PNG, JPG, dan JPEG dibenarkan." });
+        return res.status(400).json({ error: "Hanya fail format video (MP4, WEBM) dibenarkan." });
       }
 
-      // Save file locally for zero-config persistence
-      const ext = resolvedMime.split("/")[1] || "png";
-      const fileName = `uploaded_${assetKey}.${ext}`;
-      let finalUrl = `/assets/${fileName}`;
+      let finalUrl = "";
 
-      try {
-        fs.writeFileSync(path.join(assetsDir, fileName), buffer);
-        saveLocalAsset(assetKey, finalUrl);
-      } catch (localErr) {
-        console.error("Local file save error:", localErr);
-      }
-
-      // Best-effort upload to Supabase Storage
+      // Upload to Supabase Storage
       try {
         const { data: uploadData, error: uploadError } = await supabase.storage
           .from("e-kalam-assets")
@@ -285,22 +395,27 @@ async function startServer() {
             upsert: true,
           });
 
-        if (!uploadError) {
-          const { data: urlData } = supabase.storage
-            .from("e-kalam-assets")
-            .getPublicUrl(storagePath);
-          if (urlData && urlData.publicUrl) {
-            finalUrl = `${urlData.publicUrl}?t=${new Date().getTime()}`;
-            saveLocalAsset(assetKey, finalUrl);
-          }
+        if (uploadError) {
+          throw uploadError;
+        }
+
+        const { data: urlData } = supabase.storage
+          .from("e-kalam-assets")
+          .getPublicUrl(storagePath);
+          
+        if (urlData && urlData.publicUrl) {
+          finalUrl = `${urlData.publicUrl}?t=${new Date().getTime()}`;
+        } else {
+          throw new Error("Gagal mendapatkan URL dari Supabase.");
         }
       } catch (storageErr) {
-        // Silent catch fallback to local asset URL
+        console.error("Storage upload error:", storageErr);
+        return res.status(500).json({ error: "Gagal memuat naik fail ke Supabase Storage." });
       }
 
-      // Best-effort database upsert
+      // Database upsert
       try {
-        await supabase.from("app_assets").upsert(
+        const { error: dbError } = await supabase.from("app_assets").upsert(
           {
             asset_key: assetKey,
             title: title || "Avatar",
@@ -311,8 +426,10 @@ async function startServer() {
           },
           { onConflict: "asset_key" }
         );
+        
+        if (dbError) throw dbError;
       } catch (dbErr) {
-        // Silent catch fallback
+        // console.warn("Database upsert error (ignored due to RLS):", dbErr);
       }
 
       return res.json({ success: true, publicUrl: finalUrl });
@@ -383,25 +500,9 @@ async function startServer() {
         return res.status(400).json({ error: "Hanya fail format audio (MP3, WAV, OGG, M4A, AAC) dibenarkan." });
       }
 
-      // Save file locally for zero-config persistence
-      let ext = "mp3";
-      if (resolvedMime.includes("wav")) ext = "wav";
-      else if (resolvedMime.includes("ogg")) ext = "ogg";
-      else if (resolvedMime.includes("m4a")) ext = "m4a";
-      else if (resolvedMime.includes("aac")) ext = "aac";
-      else if (resolvedMime.includes("mp4")) ext = "mp4";
+      let finalUrl = "";
 
-      const fileName = `uploaded_${assetKey}.${ext}`;
-      let finalUrl = `/assets/${fileName}`;
-
-      try {
-        fs.writeFileSync(path.join(assetsDir, fileName), buffer);
-        saveLocalAsset(assetKey, finalUrl);
-      } catch (localErr) {
-        console.error("Local file save error:", localErr);
-      }
-
-      // Best-effort upload to Supabase Storage
+      // Upload to Supabase Storage
       try {
         const { data: uploadData, error: uploadError } = await supabase.storage
           .from("e-kalam-assets")
@@ -410,22 +511,27 @@ async function startServer() {
             upsert: true,
           });
 
-        if (!uploadError) {
-          const { data: urlData } = supabase.storage
-            .from("e-kalam-assets")
-            .getPublicUrl(storagePath);
-          if (urlData && urlData.publicUrl) {
-            finalUrl = `${urlData.publicUrl}?t=${new Date().getTime()}`;
-            saveLocalAsset(assetKey, finalUrl);
-          }
+        if (uploadError) {
+          throw uploadError;
+        }
+
+        const { data: urlData } = supabase.storage
+          .from("e-kalam-assets")
+          .getPublicUrl(storagePath);
+          
+        if (urlData && urlData.publicUrl) {
+          finalUrl = `${urlData.publicUrl}?t=${new Date().getTime()}`;
+        } else {
+          throw new Error("Gagal mendapatkan URL dari Supabase.");
         }
       } catch (storageErr) {
-        // Silent catch fallback to local asset URL
+        console.error("Storage upload error:", storageErr);
+        return res.status(500).json({ error: "Gagal memuat naik fail audio ke Supabase Storage." });
       }
 
-      // Best-effort database upsert
+      // Database upsert
       try {
-        await supabase.from("app_assets").upsert(
+        const { error: dbError } = await supabase.from("app_assets").upsert(
           {
             asset_key: assetKey,
             title: title || "Audio",
@@ -436,8 +542,10 @@ async function startServer() {
           },
           { onConflict: "asset_key" }
         );
+        
+        if (dbError) throw dbError;
       } catch (dbErr) {
-        // Silent catch fallback
+        // console.warn("Database upsert error (ignored due to RLS):", dbErr);
       }
 
       return res.json({ success: true, publicUrl: finalUrl });

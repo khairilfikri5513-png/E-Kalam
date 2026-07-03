@@ -4,7 +4,7 @@
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
 -- Table: curriculum_standards
-CREATE TABLE curriculum_standards (
+CREATE TABLE IF NOT EXISTS curriculum_standards (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     skill_type VARCHAR(50) NOT NULL, -- 'listening', 'reading'
     standard_code VARCHAR(50) NOT NULL,
@@ -16,7 +16,7 @@ CREATE TABLE curriculum_standards (
 );
 
 -- Table: learning_themes
-CREATE TABLE learning_themes (
+CREATE TABLE IF NOT EXISTS learning_themes (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     title VARCHAR(255) NOT NULL,
     slug VARCHAR(255) UNIQUE NOT NULL,
@@ -28,7 +28,7 @@ CREATE TABLE learning_themes (
 );
 
 -- Table: vocabulary_items
-CREATE TABLE vocabulary_items (
+CREATE TABLE IF NOT EXISTS vocabulary_items (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     theme_id UUID REFERENCES learning_themes(id) ON DELETE CASCADE,
     arabic_text VARCHAR(255) NOT NULL,
@@ -42,7 +42,7 @@ CREATE TABLE vocabulary_items (
 );
 
 -- Table: phrase_items
-CREATE TABLE phrase_items (
+CREATE TABLE IF NOT EXISTS phrase_items (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     theme_id UUID REFERENCES learning_themes(id) ON DELETE CASCADE,
     arabic_text TEXT NOT NULL,
@@ -55,7 +55,7 @@ CREATE TABLE phrase_items (
 );
 
 -- Table: letter_focus
-CREATE TABLE letter_focus (
+CREATE TABLE IF NOT EXISTS letter_focus (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     arabic_letter VARCHAR(10) NOT NULL,
     sound_note TEXT,
@@ -68,7 +68,7 @@ CREATE TABLE letter_focus (
 );
 
 -- Table: number_items
-CREATE TABLE number_items (
+CREATE TABLE IF NOT EXISTS number_items (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     number_value INTEGER NOT NULL,
     arabic_number VARCHAR(20) NOT NULL,
@@ -81,7 +81,7 @@ CREATE TABLE number_items (
 );
 
 -- Table: listening_activities
-CREATE TABLE listening_activities (
+CREATE TABLE IF NOT EXISTS listening_activities (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     theme_id UUID REFERENCES learning_themes(id) ON DELETE CASCADE,
     title VARCHAR(255) NOT NULL,
@@ -96,7 +96,7 @@ CREATE TABLE listening_activities (
 );
 
 -- Table: reading_activities
-CREATE TABLE reading_activities (
+CREATE TABLE IF NOT EXISTS reading_activities (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     theme_id UUID REFERENCES learning_themes(id) ON DELETE CASCADE,
     title VARCHAR(255) NOT NULL,
@@ -111,7 +111,7 @@ CREATE TABLE reading_activities (
 );
 
 -- Table: quiz_questions
-CREATE TABLE quiz_questions (
+CREATE TABLE IF NOT EXISTS quiz_questions (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     theme_id UUID REFERENCES learning_themes(id) ON DELETE CASCADE,
     skill_type VARCHAR(50) NOT NULL, -- 'listening', 'reading'
@@ -131,7 +131,7 @@ CREATE TABLE quiz_questions (
 );
 
 -- Table: user_progress
-CREATE TABLE user_progress (
+CREATE TABLE IF NOT EXISTS user_progress (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     user_id UUID NOT NULL, -- References auth.users(id)
     completed_listening_activity_ids UUID[] DEFAULT '{}',
@@ -147,7 +147,7 @@ CREATE TABLE user_progress (
 );
 
 -- Table: user_attempts
-CREATE TABLE user_attempts (
+CREATE TABLE IF NOT EXISTS user_attempts (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     user_id UUID NOT NULL,
     activity_type VARCHAR(50), -- 'listening', 'reading', 'quiz'
@@ -159,7 +159,7 @@ CREATE TABLE user_attempts (
 );
 
 -- Table: ai_knowledge_chunks (Requires pgvector for embedding, but assuming basic text for now)
-CREATE TABLE ai_knowledge_chunks (
+CREATE TABLE IF NOT EXISTS ai_knowledge_chunks (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     title VARCHAR(255) NOT NULL,
     content TEXT NOT NULL,
@@ -171,7 +171,7 @@ CREATE TABLE ai_knowledge_chunks (
 );
 
 -- Table: admin_profiles
-CREATE TABLE admin_profiles (
+CREATE TABLE IF NOT EXISTS admin_profiles (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     user_id UUID NOT NULL UNIQUE,
     role VARCHAR(50) DEFAULT 'admin',
@@ -186,25 +186,25 @@ ALTER TABLE user_attempts ENABLE ROW LEVEL SECURITY;
 ALTER TABLE admin_profiles ENABLE ROW LEVEL SECURITY;
 
 -- Policies for user_progress
-CREATE POLICY "Users can view their own progress" 
-ON user_progress FOR SELECT 
+DROP POLICY IF EXISTS "Users can view their own progress" ON user_progress;
+CREATE POLICY "Users can view their own progress" ON user_progress FOR SELECT 
 USING (auth.uid() = user_id);
 
-CREATE POLICY "Users can update their own progress" 
-ON user_progress FOR UPDATE 
+DROP POLICY IF EXISTS "Users can update their own progress" ON user_progress;
+CREATE POLICY "Users can update their own progress" ON user_progress FOR UPDATE 
 USING (auth.uid() = user_id);
 
-CREATE POLICY "Users can insert their own progress" 
-ON user_progress FOR INSERT 
+DROP POLICY IF EXISTS "Users can insert their own progress" ON user_progress;
+CREATE POLICY "Users can insert their own progress" ON user_progress FOR INSERT 
 WITH CHECK (auth.uid() = user_id);
 
 -- Policies for user_attempts
-CREATE POLICY "Users can view their own attempts" 
-ON user_attempts FOR SELECT 
+DROP POLICY IF EXISTS "Users can view their own attempts" ON user_attempts;
+CREATE POLICY "Users can view their own attempts" ON user_attempts FOR SELECT 
 USING (auth.uid() = user_id);
 
-CREATE POLICY "Users can insert their own attempts" 
-ON user_attempts FOR INSERT 
+DROP POLICY IF EXISTS "Users can insert their own attempts" ON user_attempts;
+CREATE POLICY "Users can insert their own attempts" ON user_attempts FOR INSERT 
 WITH CHECK (auth.uid() = user_id);
 
 -- Table: unit_vocabulary
@@ -224,13 +224,13 @@ CREATE TABLE IF NOT EXISTS public.unit_vocabulary (
 -- Policies for unit_vocabulary
 ALTER TABLE public.unit_vocabulary ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY "public can read unit vocabulary"
-ON public.unit_vocabulary
+DROP POLICY IF EXISTS "public can read unit vocabulary" ON unit_vocabulary;
+CREATE POLICY "public can read unit vocabulary" ON public.unit_vocabulary
 FOR SELECT
 USING (true);
 
-CREATE POLICY "admin can insert unit vocabulary"
-ON public.unit_vocabulary
+DROP POLICY IF EXISTS "admin can insert unit vocabulary" ON unit_vocabulary;
+CREATE POLICY "admin can insert unit vocabulary" ON public.unit_vocabulary
 FOR INSERT
 WITH CHECK (
   EXISTS (
@@ -240,8 +240,8 @@ WITH CHECK (
   )
 );
 
-CREATE POLICY "admin can update unit vocabulary"
-ON public.unit_vocabulary
+DROP POLICY IF EXISTS "admin can update unit vocabulary" ON unit_vocabulary;
+CREATE POLICY "admin can update unit vocabulary" ON public.unit_vocabulary
 FOR UPDATE
 USING (
   EXISTS (
@@ -258,8 +258,8 @@ WITH CHECK (
   )
 );
 
-CREATE POLICY "admin can delete unit vocabulary"
-ON public.unit_vocabulary
+DROP POLICY IF EXISTS "admin can delete unit vocabulary" ON unit_vocabulary;
+CREATE POLICY "admin can delete unit vocabulary" ON public.unit_vocabulary
 FOR DELETE
 USING (
   EXISTS (
@@ -391,14 +391,14 @@ CREATE TABLE IF NOT EXISTS public.quiz_attempts (
 
 ALTER TABLE public.quiz_attempts ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY "users can read own quiz attempts"
-ON public.quiz_attempts
+DROP POLICY IF EXISTS "users can read own quiz attempts" ON quiz_attempts;
+CREATE POLICY "users can read own quiz attempts" ON public.quiz_attempts
 FOR SELECT
 TO authenticated
 USING (auth.uid() = user_id);
 
-CREATE POLICY "users can insert own quiz attempts"
-ON public.quiz_attempts
+DROP POLICY IF EXISTS "users can insert own quiz attempts" ON quiz_attempts;
+CREATE POLICY "users can insert own quiz attempts" ON public.quiz_attempts
 FOR INSERT
 TO authenticated
 WITH CHECK (auth.uid() = user_id);
@@ -419,13 +419,13 @@ CREATE TABLE IF NOT EXISTS public.app_assets (
 -- Policies for app_assets
 ALTER TABLE public.app_assets ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY "public can read app assets"
-ON public.app_assets
+DROP POLICY IF EXISTS "public can read app assets" ON app_assets;
+CREATE POLICY "public can read app assets" ON public.app_assets
 FOR SELECT
 USING (true);
 
-CREATE POLICY "admin can insert app assets"
-ON public.app_assets
+DROP POLICY IF EXISTS "admin can insert app assets" ON app_assets;
+CREATE POLICY "admin can insert app assets" ON public.app_assets
 FOR INSERT
 WITH CHECK (
   EXISTS (
@@ -435,8 +435,8 @@ WITH CHECK (
   )
 );
 
-CREATE POLICY "admin can update app assets"
-ON public.app_assets
+DROP POLICY IF EXISTS "admin can update app assets" ON app_assets;
+CREATE POLICY "admin can update app assets" ON public.app_assets
 FOR UPDATE
 USING (
   EXISTS (
@@ -453,8 +453,8 @@ WITH CHECK (
   )
 );
 
-CREATE POLICY "admin can delete app assets"
-ON public.app_assets
+DROP POLICY IF EXISTS "admin can delete app assets" ON app_assets;
+CREATE POLICY "admin can delete app assets" ON public.app_assets
 FOR DELETE
 USING (
   EXISTS (
@@ -463,3 +463,12 @@ USING (
     WHERE admin_profiles.user_id = auth.uid()
   )
 );
+
+-- Storage bucket for assets
+INSERT INTO storage.buckets (id, name, public) VALUES ('e-kalam-assets', 'e-kalam-assets', true) ON CONFLICT (id) DO NOTHING;
+
+DROP POLICY IF EXISTS "Public Access e-kalam-assets" ON storage.objects;
+CREATE POLICY "Public Access e-kalam-assets" ON storage.objects FOR SELECT USING (bucket_id = 'e-kalam-assets');
+
+DROP POLICY IF EXISTS "Admin Manage e-kalam-assets" ON storage.objects;
+CREATE POLICY "Admin Manage e-kalam-assets" ON storage.objects USING (bucket_id = 'e-kalam-assets') WITH CHECK (bucket_id = 'e-kalam-assets');

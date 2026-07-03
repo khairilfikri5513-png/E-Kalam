@@ -5,17 +5,22 @@ import {
   UnitVocabulary,
 } from "../../hooks/useUnitVocabulary";
 import { useAppAssets } from "../../hooks/useAppAssets";
+import { useUnitVideo } from "../../hooks/useUnitVideo";
 import MuallimahUmmiAvatarLocal from "../../assets/images/muallimah-ummi-avatar.png";
 import { PlayCircle, BookOpen } from "lucide-react";
+import { Skeleton } from "../../components/ui/Skeleton";
+import { VideoWithAudioCheck } from "../../components/VideoWithAudioCheck";
 import { UnitHeader } from "../../components/units/UnitHeader";
 import { UnitGuideBubble } from "../../components/units/UnitGuideBubble";
 import { TimeVocabularyCard } from "../../components/units/TimeVocabularyCard";
 import { VocabularyDetailModal } from "../../components/units/VocabularyDetailModal";
+import { VocabularySkeletonGrid } from "../../components/units/VocabularySkeletonGrid";
 
 export default function UnitFourScreen() {
   const navigate = useNavigate();
   const { vocabulary, loading } = useUnitVocabulary("unit_4_time");
-  const { assets } = useAppAssets(["muallimah_ummi_avatar"]);
+  const { assets, loading: assetsLoading } = useAppAssets(["muallimah_ummi_avatar"]);
+  const { videoUrl, loading: videoLoading, error: videoError } = useUnitVideo("unit_4_video");
   const muallimahUmmiAvatar =
     assets.muallimah_ummi_avatar || MuallimahUmmiAvatarLocal;
 
@@ -61,11 +66,34 @@ export default function UnitFourScreen() {
           themeColor="blue"
         />
 
+                {/* Unit Video Section */}
+        <div className="mb-8">
+          {videoLoading ? (
+            <Skeleton className="w-full aspect-video rounded-2xl shadow-md" />
+          ) : videoError ? (
+            <div className="bg-red-50 text-red-600 p-4 rounded-2xl text-center text-sm border border-red-100">
+              {videoError}
+            </div>
+          ) : videoUrl ? (
+            <div className="w-full max-w-3xl mx-auto">
+              <VideoWithAudioCheck 
+                src={videoUrl} 
+                controls 
+                playsInline 
+                preload="metadata" 
+                className="w-full max-h-[45vh] object-contain rounded-xl bg-black shadow-lg" 
+              />
+            </div>
+          ) : (
+            <div className="bg-slate-100 text-slate-500 p-8 rounded-2xl text-center text-sm border border-slate-200">
+              Tiada video tersedia untuk unit ini.
+            </div>
+          )}
+        </div>
+
         {/* Vocabulary Grid */}
         {loading ? (
-          <div className="flex justify-center items-center py-20">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
-          </div>
+          <VocabularySkeletonGrid />
         ) : (
           <div className="flex flex-wrap justify-between gap-y-4">
             {vocabulary.map((item) => (

@@ -1,3 +1,5 @@
+import { Skeleton } from "../components/ui/Skeleton";
+import { MediaAvatar } from "../components/MediaAvatar";
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
@@ -70,7 +72,7 @@ const contentsUnits = [
 
 export default function Home() {
   const navigate = useNavigate();
-  const { assets } = useAppAssets(['muallim_khairil_avatar', 'muallimah_ummi_avatar']);
+  const { assets, loading: assetsLoading } = useAppAssets(['muallim_khairil_avatar', 'muallimah_ummi_avatar']);
 
   const muallimKhairilAvatar = assets.muallim_khairil_avatar || MuallimKhairilAvatarLocal;
   const muallimahUmmiAvatar = assets.muallimah_ummi_avatar || MuallimahUmmiAvatarLocal;
@@ -122,8 +124,7 @@ export default function Home() {
       shadowColor: "shadow-purple-500/30",
       iconColor: "text-purple-50",
       bgIcon: "bg-white/20",
-      path: "/ai",
-      avatar: muallimKhairilAvatar
+      path: "/ai"
     }
   ];
 
@@ -166,11 +167,7 @@ export default function Home() {
           
           <div className="relative z-10 flex flex-col items-center w-full">
             <div className="w-48 h-56 relative mb-4">
-              <img 
-                src={muallimKhairilAvatar} 
-                alt="Muallim Khairil" 
-                className="w-full h-full object-contain drop-shadow-lg"
-              />
+              {assetsLoading ? <Skeleton className="w-full h-full rounded-2xl" /> : <MediaAvatar src={muallimKhairilAvatar} alt="Muallim Khairil" className="w-full h-full object-contain drop-shadow-lg rounded-2xl" />}
             </div>
             
             <div className="bg-white w-full px-5 py-4 rounded-2xl rounded-tr-sm shadow-md border border-slate-100 relative mb-6">
@@ -224,16 +221,10 @@ export default function Home() {
                   )}
                 </div>
 
-                {/* Arrow Button or Avatar */}
-                {card.avatar ? (
-                  <div className="w-16 h-16 relative flex-shrink-0 -mr-2">
-                    <img src={card.avatar} alt="Muallim Khairil" className="w-full h-full object-contain" />
-                  </div>
-                ) : (
-                  <div className="w-9 h-9 rounded-full bg-white/20 flex items-center justify-center flex-shrink-0 backdrop-blur-md shadow-sm border border-white/30 group-hover:bg-white/30 transition-colors">
-                    <ChevronRight className="w-5 h-5 text-white" strokeWidth={3} />
-                  </div>
-                )}
+                {/* Arrow Button */}
+                <div className="w-9 h-9 rounded-full bg-white/20 flex items-center justify-center flex-shrink-0 backdrop-blur-md shadow-sm border border-white/30 group-hover:bg-white/30 transition-colors">
+                  <ChevronRight className="w-5 h-5 text-white" strokeWidth={3} />
+                </div>
               </div>
             </div>
           </button>
@@ -252,11 +243,7 @@ export default function Home() {
               
               <div className="relative z-10 flex flex-col items-center w-full">
                 <div className="w-48 h-56 relative mb-4">
-                  <img 
-                    src={muallimahUmmiAvatar} 
-                    alt="Muallimah Ummi" 
-                    className="w-full h-full object-contain drop-shadow-lg"
-                  />
+                  {assetsLoading ? <Skeleton className="w-full h-full rounded-2xl" /> : <MediaAvatar src={muallimahUmmiAvatar} alt="Muallimah Ummi" className="w-full h-full object-contain drop-shadow-lg rounded-2xl" />}
                 </div>
                 
                 <div className="bg-white w-full px-5 py-4 rounded-2xl rounded-tr-sm shadow-md border border-purple-100/40 relative">

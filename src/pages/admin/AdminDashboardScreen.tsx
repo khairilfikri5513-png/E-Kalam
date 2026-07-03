@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { MediaAvatar } from "../../components/MediaAvatar";
 import { supabase } from "../../lib/supabase";
-import { LogOut, Image as ImageIcon, Upload, ShieldCheck, Music } from "lucide-react";
+import { LogOut, Image as ImageIcon, Upload, ShieldCheck, Music, CheckCircle2, Video } from "lucide-react";
 import MuallimKhairilAvatarLocal from "../../assets/images/muallim-khairil-avatar.png";
 import MuallimahUmmiAvatarLocal from "../../assets/images/muallimah-ummi-avatar.png";
 
@@ -35,24 +36,11 @@ export default function AdminDashboardScreen() {
           setLoading(false);
           
           // Fetch uploaded avatars
-          const { data: muallimData } = await supabase
-            .from("app_assets")
-            .select("public_url")
-            .eq("asset_key", "muallim_khairil_avatar")
-            .maybeSingle();
-            
-          if (muallimData?.public_url) {
-            setMuallimAvatar(muallimData.public_url);
-          }
-
-          const { data: muallimahData } = await supabase
-            .from("app_assets")
-            .select("public_url")
-            .eq("asset_key", "muallimah_ummi_avatar")
-            .maybeSingle();
-            
-          if (muallimahData?.public_url) {
-            setMuallimahAvatar(muallimahData.public_url);
+          const response = await fetch(`/api/assets?keys=muallim_khairil_avatar,muallimah_ummi_avatar`);
+          if (response.ok) {
+            const data = await response.json();
+            if (data.muallim_khairil_avatar) setMuallimAvatar(data.muallim_khairil_avatar);
+            if (data.muallimah_ummi_avatar) setMuallimahAvatar(data.muallimah_ummi_avatar);
           }
         } else {
           localStorage.removeItem("admin_token");
@@ -105,11 +93,12 @@ export default function AdminDashboardScreen() {
           >
             <LogOut className="w-4 h-4" />
             <span className="hidden sm:inline">Logout</span>
-          </button>
-        </div>
+          </button>        </div>
       </div>
 
       <div className="max-w-4xl mx-auto px-6 py-8">
+        
+
         <h2 className="text-xl font-bold text-slate-800 mb-6">
           Pengurusan Kandungan
         </h2>
@@ -134,8 +123,8 @@ export default function AdminDashboardScreen() {
                     className="w-full h-full object-contain p-1 drop-shadow-sm"
                   />
                   {muallimAvatar && (
-                    <span className="absolute bottom-0 right-0 left-0 bg-green-500 text-white text-[8px] font-bold text-center py-0.5 uppercase tracking-wider">
-                      Uploaded
+                    <span className="absolute bottom-0 right-0 left-0 bg-green-500 text-white flex items-center justify-center py-0.5" title="Uploaded">
+                      <CheckCircle2 className="w-3 h-3" strokeWidth={3} />
                     </span>
                   )}
                 </div>
@@ -169,8 +158,8 @@ export default function AdminDashboardScreen() {
                     className="w-full h-full object-contain p-1 drop-shadow-sm"
                   />
                   {muallimahAvatar && (
-                    <span className="absolute bottom-0 right-0 left-0 bg-green-500 text-white text-[8px] font-bold text-center py-0.5 uppercase tracking-wider">
-                      Uploaded
+                    <span className="absolute bottom-0 right-0 left-0 bg-green-500 text-white flex items-center justify-center py-0.5" title="Uploaded">
+                      <CheckCircle2 className="w-3 h-3" strokeWidth={3} />
                     </span>
                   )}
                 </div>
@@ -201,6 +190,26 @@ export default function AdminDashboardScreen() {
               </h3>
               <p className="text-slate-500 text-sm">
                 Urus dan muat naik rakaman suara sebenar untuk Latihan Membaca & Latihan Mendengar.
+              </p>
+            </div>
+          </button>
+
+          {/* Menu 4: Manage Unit Videos */}
+          <button
+            onClick={() => navigate("/admin/upload-unit-video")}
+            className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 hover:border-emerald-400 hover:shadow-md transition-all text-left group flex flex-col justify-between h-full min-h-[180px]"
+          >
+            <div className="w-full">
+              <div className="flex items-center justify-between mb-4">
+                <div className="w-12 h-12 bg-emerald-100 text-emerald-600 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
+                  <Video className="w-6 h-6" />
+                </div>
+              </div>
+              <h3 className="font-bold text-slate-800 text-lg mb-2">
+                Muat Naik Video Pembelajaran
+              </h3>
+              <p className="text-slate-500 text-sm">
+                Urus dan muat naik video pembelajaran untuk setiap unit (Unit Pertama hingga Keempat).
               </p>
             </div>
           </button>
