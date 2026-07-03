@@ -4,9 +4,7 @@ import {
   useUnitVocabulary,
   UnitVocabulary,
 } from "../../hooks/useUnitVocabulary";
-import { useAppAssets } from "../../hooks/useAppAssets";
 import { useUnitVideo } from "../../hooks/useUnitVideo";
-import MuallimahUmmiAvatarLocal from "../../assets/images/muallimah-ummi-avatar.png";
 import { PlayCircle, BookOpen } from "lucide-react";
 import { Skeleton } from "../../components/ui/Skeleton";
 import { VideoWithAudioCheck } from "../../components/VideoWithAudioCheck";
@@ -19,10 +17,7 @@ import { VocabularyDetailModal } from "../../components/units/VocabularyDetailMo
 export default function UnitOneScreen() {
   const navigate = useNavigate();
   const { vocabulary, loading } = useUnitVocabulary("unit_1_classroom");
-  const { assets, loading: assetsLoading } = useAppAssets(["muallimah_ummi_avatar"]);
   const { videoUrl, loading: videoLoading, error: videoError } = useUnitVideo("unit_1_video");
-  const muallimahUmmiAvatar =
-    assets.muallimah_ummi_avatar || MuallimahUmmiAvatarLocal;
 
   const [selectedWord, setSelectedWord] = useState<UnitVocabulary | null>(null);
 
@@ -56,7 +51,6 @@ export default function UnitOneScreen() {
 
       <div className="flex-1 px-4 pt-12 pb-8 z-10 max-w-4xl mx-auto w-full">
         <UnitGuideBubble
-          avatarUrl={muallimahUmmiAvatar}
           message="Dengar dan baca perkataan di dalam kelas."
         />
 

@@ -4,9 +4,7 @@ import {
   useUnitVocabulary,
   UnitVocabulary,
 } from "../../hooks/useUnitVocabulary";
-import { useAppAssets } from "../../hooks/useAppAssets";
 import { useUnitVideo } from "../../hooks/useUnitVideo";
-import MuallimahUmmiAvatarLocal from "../../assets/images/muallimah-ummi-avatar.png";
 import { PlayCircle, BookOpen } from "lucide-react";
 import { Skeleton } from "../../components/ui/Skeleton";
 import { VideoWithAudioCheck } from "../../components/VideoWithAudioCheck";
@@ -19,10 +17,7 @@ import { VocabularySkeletonGrid } from "../../components/units/VocabularySkeleto
 export default function UnitFourScreen() {
   const navigate = useNavigate();
   const { vocabulary, loading } = useUnitVocabulary("unit_4_time");
-  const { assets, loading: assetsLoading } = useAppAssets(["muallimah_ummi_avatar"]);
   const { videoUrl, loading: videoLoading, error: videoError } = useUnitVideo("unit_4_video");
-  const muallimahUmmiAvatar =
-    assets.muallimah_ummi_avatar || MuallimahUmmiAvatarLocal;
 
   const [selectedWord, setSelectedWord] = useState<UnitVocabulary | null>(null);
 
@@ -61,7 +56,6 @@ export default function UnitFourScreen() {
 
       <div className="flex-1 px-4 pt-12 pb-8 z-10 max-w-4xl mx-auto w-full">
         <UnitGuideBubble
-          avatarUrl={muallimahUmmiAvatar}
           message="Dengar dan baca perkataan tentang masa dan hari."
           themeColor="blue"
         />
